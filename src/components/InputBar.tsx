@@ -123,22 +123,6 @@ export default function InputBar() {
   const promptPreview =
     normalizedPrompt.replace(/\s+/g, ' ').slice(0, 120) || '输入框已收起，点击展开继续编辑'
   const normalizedSize = normalizeImageSize(params.size) || DEFAULT_PARAMS.size
-  const activeApiProtocol = settings.apiProtocol === 'responses' ? 'responses' : 'images'
-  const requestDebugItems = [
-    { label: '协议', value: activeApiProtocol },
-    { label: '主模型', value: settings.model.trim() || '-' },
-    ...(activeApiProtocol === 'responses'
-      ? [{ label: '图像模型', value: settings.responsesImageModel.trim() || 'gpt-image-2' }]
-      : []),
-    { label: '尺寸', value: normalizedSize },
-    { label: '质量', value: params.quality },
-    { label: '格式', value: params.output_format },
-    { label: '审核', value: params.moderation },
-    { label: '数量', value: String(params.n) },
-    ...(params.output_format !== 'png' && params.output_compression != null
-      ? [{ label: '压缩率', value: String(params.output_compression) }]
-      : []),
-  ]
   const expandPromptInput = useCallback((focusTextarea = true) => {
     setPromptCollapsed(false)
     if (!focusTextarea) return
@@ -804,24 +788,6 @@ export default function InputBar() {
             {activeCategoryFilter === FAVORITES_CATEGORY_FILTER && (
               <span>当前位于收藏视图，默认进入未分类，不会自动加入收藏。</span>
             )}
-          </div>
-
-          <div className="mt-3 rounded-2xl border border-sky-100 bg-sky-50/70 px-4 py-3 dark:border-sky-500/20 dark:bg-sky-500/10">
-            <div className="text-[11px] font-medium uppercase tracking-wider text-sky-600 dark:text-sky-300">
-              当前提交快照
-            </div>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {requestDebugItems.map((item) => (
-                <span
-                  key={`${item.label}-${item.value}`}
-                  className="inline-flex items-center gap-1 rounded-full bg-white/80 px-2.5 py-1 text-[11px] text-sky-700 shadow-sm dark:bg-white/[0.06] dark:text-sky-100"
-                  title={`${item.label}: ${item.value}`}
-                >
-                  <span className="text-sky-500 dark:text-sky-300">{item.label}</span>
-                  <span className="font-mono">{item.value}</span>
-                </span>
-              ))}
-            </div>
           </div>
 
           {/* 参数 + 按钮 */}

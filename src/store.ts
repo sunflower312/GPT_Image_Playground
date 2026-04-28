@@ -1070,11 +1070,6 @@ export async function submitTask() {
     editSourceImageId: maskedInput?.sourceImageId ?? maskedInput?.id ?? null,
     editSelection: maskedInput?.editSelection ?? null,
     outputImages: [],
-    requestSettingsSnapshot: {
-      apiProtocol: requestSettings.apiProtocol || DEFAULT_SETTINGS.apiProtocol,
-      model: requestSettings.model,
-      responsesImageModel: requestSettings.responsesImageModel || null,
-    },
     responseMeta: null,
     errorDebug: null,
     status: 'running',
