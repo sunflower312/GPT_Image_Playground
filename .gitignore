@@ -5,3 +5,4 @@ dist/
 logs/*
 !logs/.gitkeep
 /.idea/
+/.idea/

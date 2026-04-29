@@ -26,14 +26,14 @@
 
 - 本地优先：任务记录、图片、配置都保存在浏览器本地，适合个人工作流、私有 API 节点和高频试验。
 - 工作流完整：不是单纯的生图面板，而是围绕“生成 -> 筛选 -> 复用 -> 再编辑 -> 归档”设计。
-- 协议兼容强：同时支持 `Images API`、`Responses API` 和自动回退，既能走生图，也能走编辑图，适合官方接口与各类兼容中转站。
+- 协议兼容强：同时支持 `Images API` 与 `Responses API`，既能走生图，也能走编辑图，适合官方接口与各类兼容中转站。
 - 可持续迭代：尺寸规整、任务分类、收藏、回收站、导入导出、右键菜单、局部编辑等能力已经形成较完整的产品骨架。
 
 ## 特性总览
 
 - 文本生图、参考图编辑、局部编辑蒙版。
 - 多供应商配置，按任务记录供应商快照。
-- `Images API / Responses API / auto` 三种协议路由方式，支持通过 `Responses API` 发起生图与编辑图。
+- `Images API / Responses API` 双协议路由方式，支持通过 `Responses API` 发起生图与编辑图。
 - `stream / json / auto` 传输模式与 `file_id / auto` 参考图输入模式。
 - `Images API` 与 `Responses API` 都可按设置优先尝试流式；不兼容时会自动回退，并记录实际传输方式。
 - 失败任务可原任务重试；运行中任务可确认中止；多图任务会边出边存，后续失败也尽量保留已生成结果。
@@ -177,7 +177,7 @@ React UI
 | 状态管理 | Zustand |
 | 本地存储 | IndexedDB |
 | 数据打包 | fflate |
-| 部署支持 | Vercel / Docker / Nginx / 任意静态托管 |
+| 运行方式 | 本地开发 / 静态构建 |
 
 ## 快速开始
 
@@ -198,7 +198,7 @@ http://localhost:5173
 
 - `API URL`
 - `API Key`
-- `协议模式（Images / Responses / Auto）`
+- `协议模式（Images / Responses）`
 - `传输偏好（auto / stream / json）`
 - `请求超时（默认 900 秒）`
 - `请求模式（direct / local_proxy）`
@@ -240,11 +240,16 @@ npm run build
 npm run preview
 ```
 
+说明：
+
+- `npm run build` 仅生成静态产物。
+- `npm run preview` 下只能使用 `direct`；`local_proxy` 仍然只在 `npm run dev` 生效。
+
 ### 4. 部署
 
-- 静态部署：直接部署 `dist/` 即可。
-- Vercel：导入本仓库，构建命令使用 `npm run build`。
-- Docker / Nginx：可参考 `deploy/` 目录中的现成文件。
+- 当前仓库已移除 GitHub Pages / Vercel 等平台部署预设。
+- 如需静态部署，只能使用 `direct`，并且要求上游接口支持浏览器直连（`HTTPS`、`CORS`、预检）。
+- `deploy/` 目录中的 Docker / Nginx 文件仅保留为历史参考，不再作为默认运行路径。
 
 ## 项目结构
 
@@ -304,7 +309,6 @@ npm run preview
 ├─ dev-proxy.config.example.json
 ├─ dev-proxy.config.json
 ├─ vite.config.ts
-├─ vercel.json
 ├─ package.json
 └─ README.md
 ```
@@ -324,21 +328,18 @@ npm run preview
 
 完整错误日志默认保留 15 天，到期会自动清理；任务本身不会因此被删除。
 
-### 为什么直连 API 会失败？
+### 为什么静态部署后可能不能正常请求 API？
 
-常见原因有两个：
+静态部署环境不能使用 `local_proxy`，因为它依赖 Vite 开发服务器提供的同源代理。
 
-- 目标接口未正确配置 CORS。
-- 页面是 HTTPS，而你的 API URL 是 HTTP。
-
-这时优先使用 `local_proxy` 本地代理模式，或改用服务端反向代理。
+因此在 `dist/` 静态托管、`vite preview`、GitHub Pages、Vercel 这类环境里，只有切到 `direct` 才可能工作；如果上游接口不支持浏览器直连（例如缺少 `CORS`、预检失败、`HTTPS` 页面请求 `HTTP` 接口），请求仍然会失败。
 
 ### `Images API` 和 `Responses API` 有什么区别？
 
 - `Images API` 更直接，适合标准图片生成/编辑链路。
 - `Responses API` 更灵活，适合统一接入、流式输出和更多兼容场景。
 - 本项目里，`Responses API` 不只用于生图，也支持带参考图和蒙版的编辑图工作流。
-- 本项目支持 `auto`，会在必要时自动回退。
+- 本项目支持手动切换 `Images API` 与 `Responses API`，并在传输层按设置处理兼容性与降级。
 
 ### 为什么这里强调 SSE 流式传输？
 
