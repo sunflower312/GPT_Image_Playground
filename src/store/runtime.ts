@@ -263,6 +263,24 @@ export async function submitTask() {
   void executeTask(taskId, requestSettings)
 }
 
+function cloneTaskForRetry(task: TaskRecord): TaskRecord {
+  return {
+    ...task,
+    id: genId(),
+    deletedAt: null,
+    isFavorite: false,
+    outputImages: [],
+    responseMeta: null,
+    errorDebug: null,
+    isAborted: false,
+    status: 'running',
+    error: null,
+    createdAt: Date.now(),
+    finishedAt: null,
+    elapsed: null,
+  }
+}
+
 export async function retryTask(task: TaskRecord) {
   if (isTaskInRecycleBin(task)) {
     useStore.getState().showToast('回收站中的任务无法重试', 'error')
@@ -272,6 +290,22 @@ export async function retryTask(task: TaskRecord) {
   const currentTask = useStore.getState().tasks.find((item) => item.id === task.id) ?? task
   if (currentTask.status === 'running') {
     useStore.getState().showToast('该任务正在进行中', 'info')
+    return
+  }
+
+  if (currentTask.status !== 'error' && currentTask.status !== 'partial_error') {
+    useStore.getState().showToast('当前任务不支持重试', 'info')
+    return
+  }
+
+  if (currentTask.status === 'partial_error') {
+    const retryTaskRecord = cloneTaskForRetry(currentTask)
+    const { tasks, setTasks, showToast, setDetailTaskId } = useStore.getState()
+    setTasks([retryTaskRecord, ...tasks])
+    await putTask(retryTaskRecord)
+    setDetailTaskId(retryTaskRecord.id)
+    showToast('已新建重试任务', 'info')
+    void executeTask(retryTaskRecord.id)
     return
   }
 
@@ -330,11 +364,11 @@ async function executeTask(taskId: string, requestSettings?: AppSettings) {
 
   const taskProvider = findProviderById(providers, task.providerId)
   const providerSettings = requestSettings ?? (taskProvider ? getProviderSettings(taskProvider) : settings)
+  const outputIds: string[] = []
 
   try {
     throwIfTaskAbortRequested(taskId)
 
-    const outputIds: string[] = []
     const appendOutputImages = async (images: string[]) => {
       if (!images.length) {
         return
@@ -408,10 +442,11 @@ async function executeTask(taskId: string, requestSettings?: AppSettings) {
     const wasUserAborted =
       isTaskAbortRequested(taskId) ||
       (error instanceof Error && (error.name === 'TaskAbortError' || error.message === '任务已中止'))
+    const hasPartialOutputs = outputIds.length > 0
 
     if (wasUserAborted) {
       updateTaskInStore(taskId, {
-        status: 'error',
+        status: hasPartialOutputs ? 'partial_error' : 'error',
         isAborted: true,
         error: '任务已中止',
         errorDebug: null,
@@ -422,7 +457,7 @@ async function executeTask(taskId: string, requestSettings?: AppSettings) {
     }
 
     updateTaskInStore(taskId, {
-      status: 'error',
+      status: hasPartialOutputs ? 'partial_error' : 'error',
       isAborted: false,
       error: error instanceof Error ? error.message : String(error),
       errorDebug: buildTaskErrorDebugInfo(providerSettings, error),

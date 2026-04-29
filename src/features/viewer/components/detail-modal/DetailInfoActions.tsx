@@ -14,9 +14,11 @@ interface DetailInfoActionsProps {
 
 export default function DetailInfoActions(props: DetailInfoActionsProps) {
   const { task, inRecycleBin, canEditOutputs, onReuse, onEdit, onRetry, onDelete, onRestore, onPurge } = props
+  const canRetry = task.status === 'error' || task.status === 'partial_error'
+  const showEditAction = canEditOutputs
 
   return (
-    <div className="flex gap-2 border-t border-gray-100 pt-3 dark:border-white/[0.08]">
+    <div className="flex flex-wrap gap-2 border-t border-gray-100 pt-3 dark:border-white/[0.08]">
       {inRecycleBin ? (
         <>
           <button
@@ -58,27 +60,34 @@ export default function DetailInfoActions(props: DetailInfoActionsProps) {
               复用配置
             </span>
           </button>
-          <button
-            type="button"
-            onClick={task.status === 'error' ? onRetry : onEdit}
-            disabled={task.status !== 'error' && !canEditOutputs}
-            className={`flex-1 whitespace-nowrap rounded-lg px-2 py-2 text-xs font-medium transition sm:px-3 sm:text-sm ${
-              task.status === 'error'
-                ? 'bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20'
-                : 'bg-green-50 text-green-600 hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-green-500/10 dark:text-green-400 dark:hover:bg-green-500/20'
-            }`}
-          >
-            <span className="flex items-center justify-center gap-1.5">
-              <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {task.status === 'error' ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m14.216 2A7.5 7.5 0 005.582 9m0 0H10m10 11v-5h-.581m0 0H14a7.5 7.5 0 01-13.418-2" />
-                ) : (
+          {showEditAction && (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="flex-1 whitespace-nowrap rounded-lg bg-green-50 px-2 py-2 text-xs font-medium text-green-600 transition hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-40 sm:px-3 sm:text-sm dark:bg-green-500/10 dark:text-green-400 dark:hover:bg-green-500/20"
+            >
+              <span className="flex items-center justify-center gap-1.5">
+                <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                )}
-              </svg>
-              {task.status === 'error' ? '重试' : '编辑输出'}
-            </span>
-          </button>
+                </svg>
+                编辑输出
+              </span>
+            </button>
+          )}
+          {canRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="flex-1 whitespace-nowrap rounded-lg bg-amber-50 px-2 py-2 text-xs font-medium text-amber-600 transition hover:bg-amber-100 sm:px-3 sm:text-sm dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20"
+            >
+              <span className="flex items-center justify-center gap-1.5">
+                <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m14.216 2A7.5 7.5 0 005.582 9m0 0H10m10 11v-5h-.581m0 0H14a7.5 7.5 0 01-13.418-2" />
+                </svg>
+                重试
+              </span>
+            </button>
+          )}
           <button
             type="button"
             onClick={onDelete}

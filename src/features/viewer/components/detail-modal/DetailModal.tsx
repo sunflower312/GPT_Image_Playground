@@ -83,8 +83,12 @@ export default function DetailModal() {
   const statusChipClass =
     task.status === 'done'
       ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300'
+      : task.status === 'partial_error'
+        ? 'bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300'
       : task.status === 'error'
-        ? 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-300'
+        ? task.isAborted
+          ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300'
+          : 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-300'
         : 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300'
   const transportChipClass =
     transportMeta?.actual === 'stream'

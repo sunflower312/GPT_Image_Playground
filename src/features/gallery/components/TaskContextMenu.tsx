@@ -97,7 +97,10 @@ export default function TaskContextMenu({
 
   const position = useMemo(() => {
     const menuWidth = 188
-    const menuHeight = isInRecycleBin ? 148 : 248
+    const hasEditAction = task ? canEditTaskOutputs(task) : false
+    const hasRetryAction = task?.status === 'error' || task?.status === 'partial_error'
+    const actionCount = 5 + (hasEditAction ? 1 : 0) + (hasRetryAction ? 1 : 0)
+    const menuHeight = isInRecycleBin ? 148 : 32 + actionCount * 36
     let left = x
     let top = y
 
@@ -109,11 +112,13 @@ export default function TaskContextMenu({
     }
 
     return { left, top }
-  }, [isInRecycleBin, x, y])
+  }, [isInRecycleBin, task, x, y])
 
   if (!task) return null
 
   const canEditOutputs = canEditTaskOutputs(task)
+  const canRetry = task.status === 'error' || task.status === 'partial_error'
+  const showEditAction = canEditOutputs
 
   return (
     <div
@@ -185,26 +190,33 @@ export default function TaskContextMenu({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
             </svg>
           </MenuItem>
-          <MenuItem
-            label={task.status === 'error' ? '重试' : '编辑输出'}
-            disabled={task.status !== 'error' && !canEditOutputs}
-            onClick={() => {
-              onClose()
-              if (task.status === 'error') {
-                onRetry()
-                return
-              }
-              onEdit()
-            }}
-          >
-            <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {task.status === 'error' ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m14.216 2A7.5 7.5 0 005.582 9m0 0H10m10 11v-5h-.581m0 0H14a7.5 7.5 0 01-13.418-2" />
-              ) : (
+          {showEditAction && (
+            <MenuItem
+              label="编辑输出"
+              disabled={!canEditOutputs}
+              onClick={() => {
+                onClose()
+                onEdit()
+              }}
+            >
+              <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              )}
-            </svg>
-          </MenuItem>
+              </svg>
+            </MenuItem>
+          )}
+          {canRetry && (
+            <MenuItem
+              label="重试"
+              onClick={() => {
+                onClose()
+                onRetry()
+              }}
+            >
+              <svg className="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m14.216 2A7.5 7.5 0 005.582 9m0 0H10m10 11v-5h-.581m0 0H14a7.5 7.5 0 01-13.418-2" />
+              </svg>
+            </MenuItem>
+          )}
           <MenuItem
             label="移动分类"
             onClick={() => {

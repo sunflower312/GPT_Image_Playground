@@ -49,7 +49,7 @@ export interface AppState {
   replaceCategoryState: (categories: CategoryConfig[], activeCategoryFilter?: string) => void
   searchQuery: string
   setSearchQuery: (query: string) => void
-  filterStatus: 'all' | 'running' | 'done' | 'error'
+  filterStatus: 'all' | 'running' | 'done' | 'error' | 'partial_error'
   setFilterStatus: (status: AppState['filterStatus']) => void
   taskView: TaskView
   setTaskView: (view: TaskView) => void

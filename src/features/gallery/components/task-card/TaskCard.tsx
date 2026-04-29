@@ -84,6 +84,8 @@ function TaskCard({
   const statusChipClass =
     task.status === 'done'
       ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300'
+      : task.status === 'partial_error'
+        ? 'bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300'
       : task.status === 'error'
         ? task.isAborted
           ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300'

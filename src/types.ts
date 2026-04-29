@@ -197,7 +197,7 @@ export interface InputImage {
 
 // ===== 任务记录 =====
 
-export type TaskStatus = 'running' | 'done' | 'error'
+export type TaskStatus = 'running' | 'done' | 'error' | 'partial_error'
 
 export interface TaskRecord {
   id: string
@@ -412,9 +412,10 @@ export function isTaskInRecycleBin(task: Pick<TaskRecord, 'deletedAt'>): boolean
 
 export function resolveTaskStatusLabel(
   task: Pick<TaskRecord, 'status' | 'isAborted'>,
-): '生成中' | '已完成' | '失败' | '已中止' {
+): '生成中' | '已完成' | '失败' | '已中止' | '异常' {
   if (task.status === 'done') return '已完成'
   if (task.status === 'error' && task.isAborted) return '已中止'
+  if (task.status === 'partial_error') return '异常'
   if (task.status === 'error') return '失败'
   return '生成中'
 }
@@ -439,5 +440,9 @@ export function resolveTaskImageProgress(
 export function canEditTaskOutputs(
   task: Pick<TaskRecord, 'status' | 'outputImages'>,
 ): boolean {
-  return task.status === 'done' && Array.isArray(task.outputImages) && task.outputImages.length > 0
+  return (
+    (task.status === 'done' || task.status === 'partial_error') &&
+    Array.isArray(task.outputImages) &&
+    task.outputImages.length > 0
+  )
 }

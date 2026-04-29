@@ -1,5 +1,5 @@
 export type CategoryEditorMode = 'idle' | 'create' | 'rename'
-export type SearchFilterStatus = 'all' | 'running' | 'done' | 'error'
+export type SearchFilterStatus = 'all' | 'running' | 'done' | 'error' | 'partial_error'
 
 export interface CategoryChipItem {
   label: string
@@ -21,6 +21,7 @@ export const FILTER_STATUS_OPTIONS: Array<{ label: string; value: SearchFilterSt
   { label: '全部状态', value: 'all' },
   { label: '已完成', value: 'done' },
   { label: '生成中', value: 'running' },
+  { label: '异常', value: 'partial_error' },
   { label: '失败', value: 'error' },
 ]
 
@@ -30,6 +31,8 @@ export function resolveFilterStatusLabel(status: SearchFilterStatus): string {
       return '已完成'
     case 'running':
       return '生成中'
+    case 'partial_error':
+      return '异常'
     case 'error':
       return '失败'
     default:

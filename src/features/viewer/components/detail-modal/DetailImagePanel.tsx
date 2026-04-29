@@ -40,6 +40,8 @@ export default function DetailImagePanel({
   onPrevImage,
   onNextImage,
 }: DetailImagePanelProps) {
+  const isExceptional = task.status === 'error' || task.status === 'partial_error'
+
   return (
     <div
       ref={imagePanelRef}
@@ -93,12 +95,14 @@ export default function DetailImagePanel({
                     ? 'bg-blue-500/80'
                     : task.isAborted
                       ? 'bg-amber-500/80'
+                      : task.status === 'partial_error'
+                        ? 'bg-orange-500/80'
                       : 'bg-red-500/80'
                 }`}
               >
                 {statusLabel}
               </span>
-              {task.status === 'error' && task.error && (
+              {isExceptional && task.error && (
                 <div className="max-w-[18rem] rounded-2xl bg-black/55 px-3 py-2 text-right text-xs leading-5 text-white/90 backdrop-blur-sm">
                   <p
                     style={{
@@ -161,13 +165,22 @@ export default function DetailImagePanel({
         </svg>
       )}
 
-      {!hasGeneratedOutputs && task.status === 'error' && (
+      {!hasGeneratedOutputs && isExceptional && (
         <div className="w-full max-w-md px-4 text-center">
-          <svg className="mx-auto mb-2 h-10 w-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <svg
+            className={`mx-auto mb-2 h-10 w-10 ${task.status === 'partial_error' ? 'text-orange-400' : 'text-red-400'}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            {task.status === 'partial_error' ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M4.93 19h14.14c1.54 0 2.5-1.67 1.73-3L13.73 3c-.77-1.33-2.69-1.33-3.46 0L3.2 16c-.77 1.33.19 3 1.73 3z" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            )}
           </svg>
           <p
-            className="overflow-hidden break-all text-sm leading-6 text-red-500"
+            className={`overflow-hidden break-all text-sm leading-6 ${task.status === 'partial_error' ? 'text-orange-500' : 'text-red-500'}`}
             style={{
               display: '-webkit-box',
               WebkitBoxOrient: 'vertical',

@@ -25,6 +25,9 @@ export default function TaskCardActions({
   onPurge,
   onRestore,
 }: TaskCardActionsProps) {
+  const canRetry = taskStatus === 'error' || taskStatus === 'partial_error'
+  const showEditButton = canEditOutputs
+
   return (
     <div
       className="flex flex-shrink-0 flex-wrap items-center justify-end gap-1.5"
@@ -67,25 +70,31 @@ export default function TaskCardActions({
             </svg>
           </button>
 
-          <button
-            type="button"
-            onClick={taskStatus === 'error' ? onRetry : onEditOutputs}
-            className={`flex h-8 w-8 items-center justify-center rounded-xl border border-transparent transition-all duration-200 ${
-              taskStatus === 'error'
-                ? 'text-gray-400 hover:-translate-y-px hover:border-amber-100 hover:bg-amber-50 hover:text-amber-500 dark:hover:border-amber-500/10 dark:hover:bg-amber-950/30'
-                : 'text-gray-400 hover:-translate-y-px hover:border-green-100 hover:bg-green-50 hover:text-green-500 disabled:opacity-30 dark:hover:border-green-500/10 dark:hover:bg-green-950/30'
-            }`}
-            title={taskStatus === 'error' ? '重试' : '编辑输出'}
-            disabled={taskStatus !== 'error' && !canEditOutputs}
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {taskStatus === 'error' ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m14.216 2A7.5 7.5 0 005.582 9m0 0H10m10 11v-5h-.581m0 0H14a7.5 7.5 0 01-13.418-2" />
-              ) : (
+          {showEditButton && (
+            <button
+              type="button"
+              onClick={onEditOutputs}
+              className="flex h-8 w-8 items-center justify-center rounded-xl border border-transparent text-gray-400 transition-all duration-200 hover:-translate-y-px hover:border-green-100 hover:bg-green-50 hover:text-green-500 disabled:opacity-30 dark:hover:border-green-500/10 dark:hover:bg-green-950/30"
+              title="编辑输出"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              )}
-            </svg>
-          </button>
+              </svg>
+            </button>
+          )}
+
+          {canRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="flex h-8 w-8 items-center justify-center rounded-xl border border-transparent text-gray-400 transition-all duration-200 hover:-translate-y-px hover:border-amber-100 hover:bg-amber-50 hover:text-amber-500 dark:hover:border-amber-500/10 dark:hover:bg-amber-950/30"
+              title="重试"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m14.216 2A7.5 7.5 0 005.582 9m0 0H10m10 11v-5h-.581m0 0H14a7.5 7.5 0 01-13.418-2" />
+              </svg>
+            </button>
+          )}
 
           <button
             type="button"
