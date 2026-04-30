@@ -1,53 +1,33 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useStore } from '../../../../store'
-import { ensureImageCached, getCachedImage } from '../../../../store/cache'
+import { closeLightbox, openLightbox, useStore } from '../../../../store'
+import { useImageAssetView } from '../../../../hooks/useImageAssetView'
 
 export function useLightboxState() {
   const lightboxImageId = useStore((state) => state.lightboxImageId)
   const lightboxImageList = useStore((state) => state.lightboxImageList)
-  const setLightboxImageId = useStore((state) => state.setLightboxImageId)
-  const [src, setSrc] = useState('')
+  const currentIndex = lightboxImageId ? lightboxImageList.indexOf(lightboxImageId) : -1
+  const activeImageId =
+    currentIndex >= 0 ? lightboxImageList[currentIndex] : lightboxImageId
+  const { url: src } = useImageAssetView(activeImageId)
 
   const close = useCallback(() => {
-    setLightboxImageId(null)
-  }, [setLightboxImageId])
+    closeLightbox()
+  }, [])
+
+  const total = lightboxImageList.length
+  const showNav = total > 1 && currentIndex >= 0
 
   useEffect(() => {
     if (!lightboxImageId) {
-      setSrc('')
       return
     }
 
-    let cancelled = false
-    const cached = getCachedImage(lightboxImageId, 'original')
-    if (cached) {
-      setSrc(cached)
-      return () => {
-        cancelled = true
-      }
+    if (currentIndex >= 0) {
+      return
     }
 
-    setSrc('')
-    void ensureImageCached(lightboxImageId, 'original')
-      .then((url) => {
-        if (!cancelled && url) {
-          setSrc(url)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setSrc('')
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [lightboxImageId])
-
-  const currentIndex = lightboxImageId ? lightboxImageList.indexOf(lightboxImageId) : -1
-  const total = lightboxImageList.length
-  const showNav = total > 1
+    closeLightbox()
+  }, [currentIndex, lightboxImageId])
 
   const goTo = useCallback(
     (index: number) => {
@@ -55,9 +35,9 @@ export function useLightboxState() {
 
       const wrappedIndex =
         ((index % lightboxImageList.length) + lightboxImageList.length) % lightboxImageList.length
-      setLightboxImageId(lightboxImageList[wrappedIndex], lightboxImageList)
+      openLightbox(lightboxImageList[wrappedIndex], lightboxImageList)
     },
-    [lightboxImageList, setLightboxImageId],
+    [lightboxImageList],
   )
 
   const goPrev = useCallback(() => {

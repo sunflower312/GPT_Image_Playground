@@ -1,4 +1,5 @@
 import type { TaskRecord } from '../../../../types'
+import { resolveTaskKind } from '../../../../store'
 import DetailInfoActions from './DetailInfoActions'
 import DetailInfoHeader from './DetailInfoHeader'
 import DetailInputImagesSection from './DetailInputImagesSection'
@@ -79,8 +80,10 @@ export default function DetailInfoPanel({
   onRestore,
   onPurge,
 }: DetailInfoPanelProps) {
+  const taskKind = resolveTaskKind(task)
+
   return (
-    <div className="flex w-full flex-col overflow-y-auto p-5 md:w-1/2">
+    <div className="flex min-w-0 w-full flex-col overflow-y-auto p-5 md:flex-1">
       <div className="flex-1">
         <DetailInfoHeader
           statusLabel={statusLabel}
@@ -90,13 +93,13 @@ export default function DetailInfoPanel({
           transportChipClass={transportChipClass}
           inRecycleBin={inRecycleBin}
           isFavorite={isFavorite}
-          hasPrompt={Boolean(task.prompt)}
+          hasPrompt={Boolean(task.prompt.trim())}
           onClose={onClose}
           onToggleFavorite={onToggleFavorite}
           onCopyPrompt={onCopyPrompt}
         />
 
-        <DetailPromptSection prompt={task.prompt} revisedPrompt={revisedPrompt} />
+        <DetailPromptSection taskKind={taskKind} prompt={task.prompt} revisedPrompt={revisedPrompt} />
 
         <DetailInputImagesSection
           imageIds={task.inputImageIds ?? []}

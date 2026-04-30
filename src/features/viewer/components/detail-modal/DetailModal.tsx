@@ -1,29 +1,31 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  useStore,
-  reuseConfig,
-  editOutputs,
-  retryTask,
-  toggleTaskFavorite,
-  removeTask,
-  purgeTask,
-  restoreTask,
-} from '../../../../store'
-import { useCloseOnEscape } from '../../../../hooks/useCloseOnEscape'
-import {
+  applyGalleryTaskDetailAction,
   canEditTaskOutputs,
+  confirmGalleryPurgeTask,
+  confirmGalleryRemoveTask,
+  confirmGalleryRestoreTask,
   isTaskInRecycleBin,
+  openGalleryTaskDetail,
+  openLightbox,
   resolveTaskAppliedImageParam,
   resolveTaskCategoryName,
   resolveTaskDisplayImageParam,
   resolveTaskImageProgress,
   resolveTaskProviderName,
+  resolveTaskRunOutcome,
   resolveTaskStatusLabel,
   resolveTaskTransportLabel,
   resolveTaskTransportMeta,
-} from '../../../../types'
+  runGalleryEditOutputs,
+  useStore,
+} from '../../../../store'
+import { useCloseOnEscape } from '../../../../hooks/useCloseOnEscape'
+import { copyImageToClipboard } from '../../../../lib/clipboardImage'
+import { buildTaskLineage } from '../../../../store/taskLineage'
 import DetailImagePanel from './DetailImagePanel'
 import DetailInfoPanel from './DetailInfoPanel'
+import DetailTaskLineageRail, { type DetailTaskLineageRailItem } from './DetailTaskLineageRail'
 import { formatElapsedDuration, RECYCLE_BIN_RETENTION_MS } from './shared'
 import { useDetailImageState } from './useDetailImageState'
 
@@ -33,14 +35,44 @@ export default function DetailModal() {
   const providers = useStore((state) => state.providers)
   const detailTaskId = useStore((state) => state.detailTaskId)
   const setDetailTaskId = useStore((state) => state.setDetailTaskId)
-  const setLightboxImageId = useStore((state) => state.setLightboxImageId)
-  const setConfirmDialog = useStore((state) => state.setConfirmDialog)
   const showToast = useStore((state) => state.showToast)
+  const [lineageRootTaskId, setLineageRootTaskId] = useState<string | null>(null)
+  const previousDetailTaskIdRef = useRef<string | null>(null)
 
   const task = useMemo(
     () => tasks.find((item) => item.id === detailTaskId) ?? null,
     [tasks, detailTaskId],
   )
+  const lineageRootTask = useMemo(
+    () => tasks.find((item) => item.id === lineageRootTaskId) ?? null,
+    [tasks, lineageRootTaskId],
+  )
+  const lineage = useMemo(
+    () => (lineageRootTask ? buildTaskLineage(lineageRootTask, tasks) : []),
+    [lineageRootTask, tasks],
+  )
+
+  useEffect(() => {
+    const previousDetailTaskId = previousDetailTaskIdRef.current
+
+    if (!detailTaskId) {
+      previousDetailTaskIdRef.current = null
+      setLineageRootTaskId(null)
+      return
+    }
+
+    if (!previousDetailTaskId) {
+      setLineageRootTaskId(detailTaskId)
+    }
+
+    previousDetailTaskIdRef.current = detailTaskId
+  }, [detailTaskId])
+
+  useEffect(() => {
+    if (lineageRootTaskId && !lineageRootTask) {
+      setLineageRootTaskId(null)
+    }
+  }, [lineageRootTask, lineageRootTaskId])
 
   useCloseOnEscape(Boolean(task), () => setDetailTaskId(null))
 
@@ -59,6 +91,27 @@ export default function DetailModal() {
     hasGeneratedOutputs,
     updateImageLabelLeft,
   } = useDetailImageState(task, detailTaskId)
+  const railItems = useMemo<DetailTaskLineageRailItem[]>(() => {
+    if (!task || !lineageRootTask || !lineage.length) {
+      return []
+    }
+
+    return [
+      {
+        task: lineageRootTask,
+        taskId: lineageRootTask.id,
+        relationImageId: lineageRootTask.parentImageId ?? lineageRootTask.outputImages[0] ?? null,
+        depth: 0,
+        isEntry: true,
+        isMissing: false,
+        isLoop: false,
+      },
+      ...lineage.map((item) => ({
+        ...item,
+        isEntry: false,
+      })),
+    ]
+  }, [lineage, lineageRootTask, task])
 
   if (!task) return null
 
@@ -80,13 +133,14 @@ export default function DetailModal() {
   const revisedPrompt = task.responseMeta?.revisedPrompt?.trim() || ''
   const transportLabel = resolveTaskTransportLabel(task)
   const transportMeta = resolveTaskTransportMeta(task)
+  const runOutcome = resolveTaskRunOutcome(task)
   const statusChipClass =
-    task.status === 'done'
+    runOutcome === 'done'
       ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300'
-      : task.status === 'partial_error'
+      : runOutcome === 'partial_error'
         ? 'bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300'
-      : task.status === 'error'
-        ? task.isAborted
+      : runOutcome === 'error' || runOutcome === 'aborted'
+        ? runOutcome === 'aborted'
           ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300'
           : 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-300'
         : 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300'
@@ -97,57 +151,41 @@ export default function DetailModal() {
         ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300'
         : 'bg-gray-100 text-gray-500 dark:bg-white/[0.04] dark:text-gray-400'
   const durationLabel = formatElapsedDuration(task.elapsed)
+  const hasLineage = railItems.length > 0
 
   const closeModal = () => setDetailTaskId(null)
 
   const handleReuse = () => {
-    reuseConfig(task)
+    applyGalleryTaskDetailAction('reuse', task)
     closeModal()
   }
 
   const handleEdit = () => {
-    editOutputs(task, currentOutputImageId || task.outputImages?.[0])
+    runGalleryEditOutputs(task, currentOutputImageId || task.outputImages?.[0])
     closeModal()
   }
 
   const handleRetry = () => {
-    void retryTask(task)
+    applyGalleryTaskDetailAction('retry', task)
   }
 
   const handleToggleFavorite = () => {
-    void toggleTaskFavorite(task)
+    applyGalleryTaskDetailAction('favorite', task)
   }
 
   const handleDelete = () => {
     closeModal()
-    setConfirmDialog({
-      title: '移入回收站',
-      message: '确定要将这条记录移入回收站吗？提示词、配置和图片会暂时保留，可在回收站恢复。',
-      confirmText: '移入回收站',
-      action: () => removeTask(task),
-    })
+    confirmGalleryRemoveTask(task)
   }
 
   const handleRestore = () => {
     closeModal()
-    setConfirmDialog({
-      title: '恢复记录',
-      message: '确定要将这条记录恢复到画廊吗？',
-      confirmText: '恢复',
-      action: () => restoreTask(task),
-    })
+    confirmGalleryRestoreTask(task)
   }
 
   const handlePurge = () => {
     closeModal()
-    setConfirmDialog({
-      title: '彻底删除记录',
-      message: '确定要彻底删除这条记录吗？删除后将无法恢复，并会清理未被其他任务引用的图片。',
-      confirmText: '彻底删除',
-      action: async () => {
-        await purgeTask(task)
-      },
-    })
+    confirmGalleryPurgeTask(task)
   }
 
   const handleCopyError = async () => {
@@ -159,6 +197,8 @@ export default function DetailModal() {
         providerName,
         categoryId: task.categoryId ?? null,
         categoryName,
+        parentTaskId: task.parentTaskId ?? null,
+        parentImageId: task.parentImageId ?? null,
         status: task.status,
         error: task.error || '生成失败',
         createdAt: task.createdAt,
@@ -204,9 +244,7 @@ export default function DetailModal() {
     if (!src) return
 
     try {
-      const response = await fetch(src)
-      const blob = await response.blob()
-      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })])
+      await copyImageToClipboard(src)
       showToast('参考图已复制', 'success')
     } catch (error) {
       console.error(error)
@@ -218,7 +256,9 @@ export default function DetailModal() {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={closeModal}>
       <div className="absolute inset-0 animate-overlay-in bg-black/20 backdrop-blur-md dark:bg-black/40" />
       <div
-        className="relative z-10 flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-white/50 bg-white/90 shadow-[0_8px_40px_rgb(0,0,0,0.12)] ring-1 ring-black/5 backdrop-blur-xl animate-modal-in md:flex-row dark:border-white/[0.08] dark:bg-gray-900/90 dark:shadow-[0_8px_40px_rgb(0,0,0,0.4)] dark:ring-white/10"
+        className={`relative z-10 flex max-h-[90vh] w-full flex-col overflow-hidden rounded-3xl border border-white/50 bg-white/90 shadow-[0_8px_40px_rgb(0,0,0,0.12)] ring-1 ring-black/5 backdrop-blur-xl animate-modal-in md:flex-row dark:border-white/[0.08] dark:bg-gray-900/90 dark:shadow-[0_8px_40px_rgb(0,0,0,0.4)] dark:ring-white/10 ${
+          hasLineage ? 'max-w-7xl' : 'max-w-5xl'
+        }`}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex h-14 items-center justify-end px-4 md:hidden">
@@ -234,64 +274,74 @@ export default function DetailModal() {
           </button>
         </div>
 
-        <DetailImagePanel
-          task={task}
-          imageIndex={imageIndex}
-          outputLen={outputLen}
-          hasGeneratedOutputs={hasGeneratedOutputs}
-          currentOutputImageSrc={currentOutputImageSrc}
-          currentImageRatio={currentImageRatio}
-          currentImageSize={currentImageSize}
-          imageLabelLeft={imageLabelLeft}
-          imagePanelRef={imagePanelRef}
-          mainImageRef={mainImageRef}
-          durationLabel={durationLabel}
-          statusLabel={statusLabel}
-          onCopyError={handleCopyError}
-          onMainImageLoad={updateImageLabelLeft}
-          onOpenLightbox={() => setLightboxImageId(task.outputImages[imageIndex], task.outputImages)}
-          onPrevImage={() => setImageIndex((imageIndex - 1 + outputLen) % outputLen)}
-          onNextImage={() => setImageIndex((imageIndex + 1) % outputLen)}
-        />
+        <div className="flex min-w-0 flex-1 flex-col md:flex-row">
+          <DetailImagePanel
+            task={task}
+            imageIndex={imageIndex}
+            outputLen={outputLen}
+            hasGeneratedOutputs={hasGeneratedOutputs}
+            currentOutputImageSrc={currentOutputImageSrc}
+            currentImageRatio={currentImageRatio}
+            currentImageSize={currentImageSize}
+            imageLabelLeft={imageLabelLeft}
+            imagePanelRef={imagePanelRef}
+            mainImageRef={mainImageRef}
+            durationLabel={durationLabel}
+            statusLabel={statusLabel}
+            onCopyError={handleCopyError}
+            onMainImageLoad={updateImageLabelLeft}
+            onOpenLightbox={() => openLightbox(task.outputImages[imageIndex], task.outputImages)}
+            onPrevImage={() => setImageIndex((imageIndex - 1 + outputLen) % outputLen)}
+            onNextImage={() => setImageIndex((imageIndex + 1) % outputLen)}
+          />
 
-        <DetailInfoPanel
-          task={task}
-          imageSrcs={imageSrcs}
-          inRecycleBin={inRecycleBin}
-          cleanupDueAt={cleanupDueAt}
-          isFavorite={isFavorite}
-          statusLabel={statusLabel}
-          statusChipClass={statusChipClass}
-          progressCountLabel={progress.countLabel}
-          transportLabel={transportLabel}
-          transportRequested={transportMeta?.requested ?? null}
-          transportChipClass={transportChipClass}
-          currentImageSize={currentImageSize}
-          providerName={providerName}
-          categoryName={categoryName}
-          displayQuality={displayQuality}
-          displayOutputFormat={displayOutputFormat}
-          appliedSize={appliedSize}
-          appliedQuality={appliedQuality}
-          appliedOutputFormat={appliedOutputFormat}
-          appliedBackground={appliedBackground}
-          appliedAction={appliedAction}
-          revisedPrompt={revisedPrompt}
-          canEditOutputs={canEditOutputs}
-          onClose={closeModal}
-          onToggleFavorite={handleToggleFavorite}
-          onCopyPrompt={handleCopyPrompt}
-          onCopyInputImage={() => {
-            void handleCopyInputImage()
-          }}
-          onOpenInputImage={(imageId) => setLightboxImageId(imageId, task.inputImageIds)}
-          onReuse={handleReuse}
-          onEdit={handleEdit}
-          onRetry={handleRetry}
-          onDelete={handleDelete}
-          onRestore={handleRestore}
-          onPurge={handlePurge}
-        />
+          <DetailInfoPanel
+            task={task}
+            imageSrcs={imageSrcs}
+            inRecycleBin={inRecycleBin}
+            cleanupDueAt={cleanupDueAt}
+            isFavorite={isFavorite}
+            statusLabel={statusLabel}
+            statusChipClass={statusChipClass}
+            progressCountLabel={progress.countLabel}
+            transportLabel={transportLabel}
+            transportRequested={transportMeta?.requested ?? null}
+            transportChipClass={transportChipClass}
+            currentImageSize={currentImageSize}
+            providerName={providerName}
+            categoryName={categoryName}
+            displayQuality={displayQuality}
+            displayOutputFormat={displayOutputFormat}
+            appliedSize={appliedSize}
+            appliedQuality={appliedQuality}
+            appliedOutputFormat={appliedOutputFormat}
+            appliedBackground={appliedBackground}
+            appliedAction={appliedAction}
+            revisedPrompt={revisedPrompt}
+            canEditOutputs={canEditOutputs}
+            onClose={closeModal}
+            onToggleFavorite={handleToggleFavorite}
+            onCopyPrompt={handleCopyPrompt}
+            onCopyInputImage={() => {
+              void handleCopyInputImage()
+            }}
+            onOpenInputImage={(imageId) => openLightbox(imageId, task.inputImageIds)}
+            onReuse={handleReuse}
+            onEdit={handleEdit}
+            onRetry={handleRetry}
+            onDelete={handleDelete}
+            onRestore={handleRestore}
+            onPurge={handlePurge}
+          />
+        </div>
+
+        {hasLineage ? (
+          <DetailTaskLineageRail
+            activeTaskId={task.id}
+            items={railItems}
+            onOpenTask={openGalleryTaskDetail}
+          />
+        ) : null}
       </div>
     </div>
   )

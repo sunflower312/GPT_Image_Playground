@@ -1,4 +1,5 @@
 import type { TaskRecord } from '../../../../types'
+import { resolveTaskKind } from '../../../../store'
 
 interface DetailParamsSectionProps {
   task: TaskRecord
@@ -73,17 +74,20 @@ export default function DetailParamsSection(props: DetailParamsSectionProps) {
     transportLabel,
     transportRequested,
   } = props
+  const taskKind = resolveTaskKind(task)
+  const isImageTask = taskKind === 'image'
 
   return (
     <>
       <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
-        参数配置
+        {isImageTask ? '任务信息' : '参数配置'}
       </h3>
       <div className="mb-4 grid grid-cols-2 gap-2 text-xs">
         {renderValueCard('分类', categoryName)}
         {renderValueCard('收藏', isFavorite ? '已收藏' : '未收藏')}
         {renderValueCard('供应商', providerName)}
         {renderValueCard('状态', statusLabel)}
+        {isImageTask ? renderValueCard('任务类型', '单图任务') : null}
         {progressCountLabel ? renderValueCard('当前张数', progressCountLabel) : null}
         {task.status === 'done' && currentImageSize
           ? renderValueCard('输出像素', currentImageSize)
@@ -91,16 +95,22 @@ export default function DetailParamsSection(props: DetailParamsSectionProps) {
         {appliedSize && appliedSize !== currentImageSize && appliedSize !== task.params.size
           ? renderValueCard('API 返回尺寸', appliedSize)
           : null}
-        {task.status === 'done' && currentImageSize ? renderValueCard('请求尺寸', task.params.size) : null}
-        {renderRequestedParamCard('质量', task.params.quality, displayQuality, appliedQuality)}
-        {renderRequestedParamCard('格式', task.params.output_format, displayOutputFormat, appliedOutputFormat)}
-        {transportLabel ? renderValueCard('传输', transportLabel) : null}
-        {transportRequested ? renderValueCard('传输偏好', transportRequested) : null}
-        {appliedBackground ? renderValueCard('实际背景', appliedBackground) : null}
-        {appliedAction ? renderValueCard('实际动作', appliedAction) : null}
-        {renderValueCard('审核', task.params.moderation)}
-        {renderValueCard('数量', String(task.params.n))}
-        {task.params.output_compression != null
+        {!isImageTask && task.status === 'done' && currentImageSize
+          ? renderValueCard('请求尺寸', task.params.size)
+          : null}
+        {!isImageTask
+          ? renderRequestedParamCard('质量', task.params.quality, displayQuality, appliedQuality)
+          : null}
+        {!isImageTask
+          ? renderRequestedParamCard('格式', task.params.output_format, displayOutputFormat, appliedOutputFormat)
+          : null}
+        {!isImageTask && transportLabel ? renderValueCard('传输', transportLabel) : null}
+        {!isImageTask && transportRequested ? renderValueCard('传输偏好', transportRequested) : null}
+        {!isImageTask && appliedBackground ? renderValueCard('实际背景', appliedBackground) : null}
+        {!isImageTask && appliedAction ? renderValueCard('实际动作', appliedAction) : null}
+        {!isImageTask ? renderValueCard('审核', task.params.moderation) : null}
+        {!isImageTask ? renderValueCard('数量', String(task.params.n)) : null}
+        {!isImageTask && task.params.output_compression != null
           ? renderValueCard('压缩率', String(task.params.output_compression))
           : null}
       </div>

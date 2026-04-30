@@ -1,4 +1,5 @@
 import type { TaskRecord } from '../../../../types'
+import { canRetryTask } from '../../../../store'
 
 interface DetailInfoActionsProps {
   task: TaskRecord
@@ -14,7 +15,7 @@ interface DetailInfoActionsProps {
 
 export default function DetailInfoActions(props: DetailInfoActionsProps) {
   const { task, inRecycleBin, canEditOutputs, onReuse, onEdit, onRetry, onDelete, onRestore, onPurge } = props
-  const canRetry = task.status === 'error' || task.status === 'partial_error'
+  const canRetry = canRetryTask(task)
   const showEditAction = canEditOutputs
 
   return (

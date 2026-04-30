@@ -1,4 +1,12 @@
-import { useEffect, useRef, useState, type ChangeEventHandler, type RefObject } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEventHandler,
+  type ClipboardEventHandler,
+  type DragEventHandler,
+  type RefObject,
+} from 'react'
 import {
   addImageFromFile,
   addImageFromUrl,
@@ -8,7 +16,7 @@ import {
 } from '../../../../store'
 import type { InputImage } from '../../../../types'
 import { API_MAX_IMAGES } from './shared'
-import type { ReferenceImagesSectionViewModel } from './useInputBarState'
+import type { InputPanelBindings, ReferenceImagesSectionViewModel } from './useInputBarState'
 
 interface UseInputImageControlsOptions {
   isMobile: boolean
@@ -27,6 +35,7 @@ interface UseInputImageControlsResult {
   fileInputRef: RefObject<HTMLInputElement | null>
   isDragging: boolean
   onFileUpload: ChangeEventHandler<HTMLInputElement>
+  panelBindings: InputPanelBindings
   referenceImagesSectionProps: ReferenceImagesSectionViewModel
 }
 
@@ -117,79 +126,6 @@ export function useInputImageControls(
   }
 
   useEffect(() => {
-    const handlePaste = (event: ClipboardEvent) => {
-      const items = event.clipboardData?.items
-      if (!items) return
-
-      const imageFiles: File[] = []
-      for (const item of Array.from(items)) {
-        if (item.type.startsWith('image/')) {
-          const file = item.getAsFile()
-          if (file) {
-            imageFiles.push(file)
-          }
-        }
-      }
-
-      if (imageFiles.length > 0) {
-        event.preventDefault()
-        void handleFilesRef.current(imageFiles)
-      }
-    }
-
-    document.addEventListener('paste', handlePaste)
-    return () => document.removeEventListener('paste', handlePaste)
-  }, [])
-
-  useEffect(() => {
-    const handleDragEnter = (event: DragEvent) => {
-      event.preventDefault()
-      event.stopPropagation()
-      dragCounter.current += 1
-      if (event.dataTransfer?.types.includes('Files')) {
-        setIsDragging(true)
-      }
-    }
-
-    const handleDragOver = (event: DragEvent) => {
-      event.preventDefault()
-      event.stopPropagation()
-    }
-
-    const handleDragLeave = (event: DragEvent) => {
-      event.preventDefault()
-      event.stopPropagation()
-      dragCounter.current -= 1
-      if (dragCounter.current === 0) {
-        setIsDragging(false)
-      }
-    }
-
-    const handleDrop = (event: DragEvent) => {
-      event.preventDefault()
-      event.stopPropagation()
-      dragCounter.current = 0
-      setIsDragging(false)
-
-      const files = event.dataTransfer?.files
-      if (files && files.length > 0) {
-        void handleFilesRef.current(files)
-      }
-    }
-
-    document.addEventListener('dragenter', handleDragEnter)
-    document.addEventListener('dragover', handleDragOver)
-    document.addEventListener('dragleave', handleDragLeave)
-    document.addEventListener('drop', handleDrop)
-    return () => {
-      document.removeEventListener('dragenter', handleDragEnter)
-      document.removeEventListener('dragover', handleDragOver)
-      document.removeEventListener('dragleave', handleDragLeave)
-      document.removeEventListener('drop', handleDrop)
-    }
-  }, [])
-
-  useEffect(() => {
     if (!showImageUrlInput) return
 
     const handlePointerDown = (event: MouseEvent) => {
@@ -226,6 +162,68 @@ export function useInputImageControls(
     fileInputRef,
     isDragging,
     onFileUpload: handleFileUpload,
+    panelBindings: {
+      onPaste: ((event) => {
+        const items = event.clipboardData?.items
+        if (!items) return
+
+        const imageFiles: File[] = []
+        for (const item of Array.from(items)) {
+          if (item.type.startsWith('image/')) {
+            const file = item.getAsFile()
+            if (file) {
+              imageFiles.push(file)
+            }
+          }
+        }
+
+        if (imageFiles.length > 0) {
+          event.preventDefault()
+          void handleFilesRef.current(imageFiles)
+        }
+      }) as ClipboardEventHandler<HTMLDivElement>,
+      onDragEnter: ((event) => {
+        if (!event.dataTransfer?.types.includes('Files')) {
+          return
+        }
+
+        event.preventDefault()
+        dragCounter.current += 1
+        setIsDragging(true)
+      }) as DragEventHandler<HTMLDivElement>,
+      onDragOver: ((event) => {
+        if (!event.dataTransfer?.types.includes('Files')) {
+          return
+        }
+
+        event.preventDefault()
+      }) as DragEventHandler<HTMLDivElement>,
+      onDragLeave: ((event) => {
+        if (!event.dataTransfer?.types.includes('Files')) {
+          return
+        }
+
+        event.preventDefault()
+        dragCounter.current = Math.max(0, dragCounter.current - 1)
+        if (dragCounter.current === 0) {
+          setIsDragging(false)
+        }
+      }) as DragEventHandler<HTMLDivElement>,
+      onDrop: ((event) => {
+        if (!event.dataTransfer?.types.includes('Files')) {
+          return
+        }
+
+        event.preventDefault()
+        dragCounter.current = 0
+        setIsDragging(false)
+
+        const files = event.dataTransfer?.files
+        if (files && files.length > 0) {
+          void handleFilesRef.current(files)
+        }
+      }) as DragEventHandler<HTMLDivElement>,
+    },
     referenceImagesSectionProps: {
       isMobile,
       inputImages,

@@ -1,18 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import type { TaskRecord } from '../../../../types'
-import {
-  ensureCachedImageMetadata,
-  ensureImageCached,
-  getCachedImage,
-  getCachedImageMetadata,
-} from '../../../../store/cache'
+import { ensureImageAssetView, getCachedImageAssetView } from '../../../../store'
 import { formatImageRatio } from '../../../../lib/size'
+import { useImageAssetView } from '../../../../hooks/useImageAssetView'
 
 export function useDetailImageState(task: TaskRecord | null, detailTaskId: string | null) {
   const [imageIndex, setImageIndex] = useState(0)
   const [imageSrcs, setImageSrcs] = useState<Record<string, string>>({})
-  const [imageRatios, setImageRatios] = useState<Record<string, string>>({})
-  const [imageSizes, setImageSizes] = useState<Record<string, string>>({})
   const [imageLabelLeft, setImageLabelLeft] = useState(8)
   const imagePanelRef = useRef<HTMLDivElement | null>(null)
   const mainImageRef = useRef<HTMLImageElement | null>(null)
@@ -25,18 +19,18 @@ export function useDetailImageState(task: TaskRecord | null, detailTaskId: strin
     if (!task) return
 
     let cancelled = false
-    const ids = [...(task.outputImages || []), ...(task.inputImageIds || [])]
+    const ids = task.inputImageIds || []
 
     for (const id of ids) {
-      const cached = getCachedImage(id, 'original')
+      const cached = getCachedImageAssetView(id)
       if (cached) {
-        setImageSrcs((previous) => ({ ...previous, [id]: cached }))
+        setImageSrcs((previous) => ({ ...previous, [id]: cached.url }))
         continue
       }
 
-      void ensureImageCached(id, 'original').then((url) => {
-        if (!cancelled && url) {
-          setImageSrcs((previous) => ({ ...previous, [id]: url }))
+      void ensureImageAssetView(id).then((view) => {
+        if (!cancelled && view) {
+          setImageSrcs((previous) => ({ ...previous, [id]: view.url }))
         }
       })
     }
@@ -47,69 +41,21 @@ export function useDetailImageState(task: TaskRecord | null, detailTaskId: strin
   }, [task])
 
   const currentOutputImageId = task?.outputImages?.[imageIndex] || ''
-  const currentOutputImageSrc = currentOutputImageId ? imageSrcs[currentOutputImageId] || '' : ''
   const outputLen = task?.outputImages?.length || 0
   const hasGeneratedOutputs = outputLen > 0
-  const currentImageRatio = currentOutputImageId ? imageRatios[currentOutputImageId] : ''
-  const currentImageSize = currentOutputImageId ? imageSizes[currentOutputImageId] : ''
-
-  useEffect(() => {
-    if (!currentOutputImageId || !currentOutputImageSrc) return
-
-    const applyImageMeta = (width: number, height: number) => {
-      setImageRatios((previous) => ({
-        ...previous,
-        [currentOutputImageId]: formatImageRatio(width, height),
-      }))
-      setImageSizes((previous) => ({
-        ...previous,
-        [currentOutputImageId]: `${width}×${height}`,
-      }))
-    }
-
-    const persistedMeta = getCachedImageMetadata(currentOutputImageId)
-    if (persistedMeta) {
-      applyImageMeta(persistedMeta.width, persistedMeta.height)
-      return
-    }
-
-    let cancelled = false
-    const loadMetaFromImage = () => {
-      const image = new Image()
-
-      image.onload = () => {
-        if (!cancelled && image.naturalWidth > 0 && image.naturalHeight > 0) {
-          applyImageMeta(image.naturalWidth, image.naturalHeight)
-        }
-      }
-
-      image.src = currentOutputImageSrc
-      if (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0) {
-        applyImageMeta(image.naturalWidth, image.naturalHeight)
-      }
-    }
-
-    void ensureCachedImageMetadata(currentOutputImageId)
-      .then((metadata) => {
-        if (!cancelled && metadata) {
-          applyImageMeta(metadata.width, metadata.height)
-          return
-        }
-
-        if (!cancelled) {
-          loadMetaFromImage()
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          loadMetaFromImage()
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [currentOutputImageId, currentOutputImageSrc])
+  const { url: currentOutputImageSrc, metadata: currentOutputMetadata } = useImageAssetView(
+    currentOutputImageId,
+    {
+      includeMetadata: true,
+      inferMetadataFromUrl: true,
+    },
+  )
+  const currentImageRatio = currentOutputMetadata
+    ? formatImageRatio(currentOutputMetadata.width, currentOutputMetadata.height)
+    : ''
+  const currentImageSize = currentOutputMetadata
+    ? `${currentOutputMetadata.width}×${currentOutputMetadata.height}`
+    : ''
 
   const updateImageLabelLeft = () => {
     const panel = imagePanelRef.current

@@ -1,5 +1,10 @@
 import { useMemo, useRef } from 'react'
-import { applyImageEditToInput, closeImageEditor, ensureImageDataUrl, useStore } from '../../../../store'
+import {
+  applyImageEditToInput,
+  closeImageEditor,
+  ensureImageAssetDataUrl,
+  useStore,
+} from '../../../../store'
 import { useCloseOnEscape } from '../../../../hooks/useCloseOnEscape'
 import ImageEditCanvasPanel from './ImageEditCanvasPanel'
 import ImageEditSidebar from './ImageEditSidebar'
@@ -71,7 +76,7 @@ export default function ImageEditModal() {
 
     setIsSubmitting(true)
     try {
-      const sourceImageDataUrl = await ensureImageDataUrl(currentImageId)
+      const sourceImageDataUrl = await ensureImageAssetDataUrl(currentImageId)
       if (!sourceImageDataUrl) {
         throw new Error('当前图片读取失败，无法写回编辑输入区')
       }
@@ -83,6 +88,7 @@ export default function ImageEditModal() {
           sourceImageId: currentImageId,
           sourceImageDataUrl,
           sourceImageIds: availableImageIds,
+          lineageParentImageId: imageEditSession.lineageParentTaskId ? currentImageId : null,
         },
         prompt: promptDraft,
         providerId: selectedProviderId,

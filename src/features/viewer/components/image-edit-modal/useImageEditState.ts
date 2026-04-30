@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ensureImageCached, getCachedImage } from '../../../../store'
 import type { ImageEditSelection, ImageEditSession } from '../../../../types'
 import { createEmptyDisplayRect, type ImageDisplayRect, type ImageNaturalSize } from './shared'
+import { useImageAssetView } from '../../../../hooks/useImageAssetView'
 
 export function useImageEditState(imageEditSession: ImageEditSession | null, activeProviderId: string) {
   const [promptDraft, setPromptDraft] = useState('')
@@ -32,6 +32,7 @@ export function useImageEditState(imageEditSession: ImageEditSession | null, act
   const currentImageNumber = totalImageCount ? currentImageIndex + 1 : 1
   const hasMultipleImages = totalImageCount > 1
   const currentImageId = availableImageIds[currentImageIndex] ?? imageEditSession?.sourceImageId ?? ''
+  const { url: loadedImageSrc } = useImageAssetView(currentImageId)
   const displayImageSrc =
     currentImageSrc ||
     (imageEditSession && currentImageId === imageEditSession.sourceImageId
@@ -84,31 +85,12 @@ export function useImageEditState(imageEditSession: ImageEditSession | null, act
       }
     }
 
-    const cachedImage = getCachedImage(currentImageId)
-    if (cachedImage) {
-      setCurrentImageSrc(cachedImage)
-      return () => {
-        cancelled = true
-      }
-    }
-
-    setCurrentImageSrc('')
-    void ensureImageCached(currentImageId)
-      .then((imageUrl) => {
-        if (!cancelled) {
-          setCurrentImageSrc(imageUrl ?? '')
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setCurrentImageSrc('')
-        }
-      })
+    setCurrentImageSrc(loadedImageSrc)
 
     return () => {
       cancelled = true
     }
-  }, [currentImageId, imageEditSession, resetImageViewport])
+  }, [currentImageId, imageEditSession, loadedImageSrc, resetImageViewport])
 
   const updateDisplayRect = useCallback(() => {
     const panel = panelRef.current

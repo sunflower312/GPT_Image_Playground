@@ -1,23 +1,23 @@
 import {
+  type ClipboardEventHandler,
   useCallback,
   useEffect,
   useState,
   type ChangeEventHandler,
   type Dispatch,
+  type DragEventHandler,
   type KeyboardEventHandler,
   type RefObject,
   type SetStateAction,
 } from 'react'
-import { useStore, submitTask } from '../../../../store'
+import { DEFAULT_PARAMS, openLightbox, resolveTaskParamSizeOrDefault, useStore, submitTask } from '../../../../store'
 import {
   ALL_CATEGORY_FILTER,
-  DEFAULT_PARAMS,
   FAVORITES_CATEGORY_FILTER,
   resolveCategoryFilterName,
   type InputImage,
   type TaskParams,
 } from '../../../../types'
-import { normalizeImageSize } from '../../../../lib/size'
 import { API_MAX_IMAGES } from './shared'
 import { useInputImageControls } from './useInputImageControls'
 import { usePromptInputController } from './usePromptInputController'
@@ -89,8 +89,17 @@ export interface SubmitSectionViewModel {
   onOpenSettings: () => void
 }
 
+export interface InputPanelBindings {
+  onPaste: ClipboardEventHandler<HTMLDivElement>
+  onDragEnter: DragEventHandler<HTMLDivElement>
+  onDragOver: DragEventHandler<HTMLDivElement>
+  onDragLeave: DragEventHandler<HTMLDivElement>
+  onDrop: DragEventHandler<HTMLDivElement>
+}
+
 export interface InputBarContentViewModel {
   isMobile: boolean
+  panelBindings: InputPanelBindings
   promptSectionProps: PromptSectionViewModel
   referenceImagesSectionProps: ReferenceImagesSectionViewModel
   paramsSectionProps: ParamsSectionViewModel
@@ -130,7 +139,6 @@ export function useInputBarState(): InputBarViewModel {
   const setParams = useStore((state) => state.setParams)
   const settings = useStore((state) => state.settings)
   const setShowSettings = useStore((state) => state.setShowSettings)
-  const setLightboxImageId = useStore((state) => state.setLightboxImageId)
   const setConfirmDialog = useStore((state) => state.setConfirmDialog)
 
   const [mobileAdvancedParamsVisible, setMobileAdvancedParamsVisible] = useState(false)
@@ -162,7 +170,7 @@ export function useInputBarState(): InputBarViewModel {
   const normalizedPrompt = prompt.trim()
   const promptPreview =
     normalizedPrompt.replace(/\s+/g, ' ').slice(0, 120) || '输入框已收起，点击展开继续编辑'
-  const normalizedSize = normalizeImageSize(params.size) || DEFAULT_PARAMS.size
+  const normalizedSize = resolveTaskParamSizeOrDefault(params.size)
   const selectClass = `rounded-xl border border-gray-200/60 bg-white/50 px-3 text-[13px] transition-all duration-200 shadow-sm hover:bg-white dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:bg-white/[0.06] ${
     isMobile ? 'py-2.5' : 'py-2'
   }`
@@ -227,15 +235,16 @@ export function useInputBarState(): InputBarViewModel {
     onPromptChange: setPrompt,
   })
 
-  const { fileInputRef, isDragging, onFileUpload, referenceImagesSectionProps } = useInputImageControls({
-    isMobile,
-    inputImages,
-    maskedInputCount,
-    primaryMaskedInput,
-    primaryMaskedInputIndex,
+  const { fileInputRef, isDragging, onFileUpload, panelBindings, referenceImagesSectionProps } =
+    useInputImageControls({
+      isMobile,
+      inputImages,
+      maskedInputCount,
+      primaryMaskedInput,
+      primaryMaskedInputIndex,
     atImageLimit,
     mobileDrawerOpen,
-    onPreviewImage: (imageId) => setLightboxImageId(imageId, inputImages.map((image) => image.id)),
+    onPreviewImage: (imageId) => openLightbox(imageId, inputImages.map((image) => image.id)),
     onRemoveInputImage: removeInputImage,
     onRequestClearAllImages: requestClearInputImages,
   })
@@ -281,6 +290,7 @@ export function useInputBarState(): InputBarViewModel {
     fileInputRef,
     inputContent: {
       isMobile,
+      panelBindings,
       promptSectionProps,
       referenceImagesSectionProps,
       paramsSectionProps,

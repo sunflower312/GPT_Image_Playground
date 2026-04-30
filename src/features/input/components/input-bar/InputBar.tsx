@@ -1,4 +1,4 @@
-import SizePickerModal from '../SizePickerModal'
+import SizePickerModal from '../size-picker/SizePickerModal'
 import DragOverlay from './DragOverlay'
 import InputPanelContent from './InputPanelContent'
 import MobilePromptDrawer from './MobilePromptDrawer'

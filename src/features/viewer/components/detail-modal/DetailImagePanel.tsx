@@ -1,5 +1,6 @@
 import type { RefObject } from 'react'
 import type { TaskRecord } from '../../../../types'
+import { isTaskRunExceptional, resolveTaskRunOutcome } from '../../../../store'
 
 interface DetailImagePanelProps {
   task: TaskRecord
@@ -40,12 +41,13 @@ export default function DetailImagePanel({
   onPrevImage,
   onNextImage,
 }: DetailImagePanelProps) {
-  const isExceptional = task.status === 'error' || task.status === 'partial_error'
+  const runOutcome = resolveTaskRunOutcome(task)
+  const isExceptional = isTaskRunExceptional(task)
 
   return (
     <div
       ref={imagePanelRef}
-      className="relative flex h-64 min-h-[16rem] w-full flex-shrink-0 items-center justify-center bg-gray-100 md:h-auto md:w-1/2 dark:bg-black/20"
+      className="relative flex h-64 min-h-[16rem] w-full flex-shrink-0 items-center justify-center bg-gray-100 md:h-auto md:w-[48%] dark:bg-black/20"
     >
       {hasGeneratedOutputs && (
         <>
@@ -93,9 +95,9 @@ export default function DetailImagePanel({
                 className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm ${
                   task.status === 'running'
                     ? 'bg-blue-500/80'
-                    : task.isAborted
+                    : runOutcome === 'aborted'
                       ? 'bg-amber-500/80'
-                      : task.status === 'partial_error'
+                      : runOutcome === 'partial_error'
                         ? 'bg-orange-500/80'
                       : 'bg-red-500/80'
                 }`}
@@ -168,19 +170,19 @@ export default function DetailImagePanel({
       {!hasGeneratedOutputs && isExceptional && (
         <div className="w-full max-w-md px-4 text-center">
           <svg
-            className={`mx-auto mb-2 h-10 w-10 ${task.status === 'partial_error' ? 'text-orange-400' : 'text-red-400'}`}
+            className={`mx-auto mb-2 h-10 w-10 ${runOutcome === 'partial_error' ? 'text-orange-400' : 'text-red-400'}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            {task.status === 'partial_error' ? (
+            {runOutcome === 'partial_error' ? (
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M4.93 19h14.14c1.54 0 2.5-1.67 1.73-3L13.73 3c-.77-1.33-2.69-1.33-3.46 0L3.2 16c-.77 1.33.19 3 1.73 3z" />
             ) : (
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             )}
           </svg>
           <p
-            className={`overflow-hidden break-all text-sm leading-6 ${task.status === 'partial_error' ? 'text-orange-500' : 'text-red-500'}`}
+            className={`overflow-hidden break-all text-sm leading-6 ${runOutcome === 'partial_error' ? 'text-orange-500' : 'text-red-500'}`}
             style={{
               display: '-webkit-box',
               WebkitBoxOrient: 'vertical',
