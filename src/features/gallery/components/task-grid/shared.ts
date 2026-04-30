@@ -1,8 +1,9 @@
 import type { TaskRecord } from '../../../../types'
 
-export const INITIAL_VISIBLE_TASK_COUNT = 24
-export const LOAD_MORE_TASK_COUNT = 24
 export const BOX_SELECT_THRESHOLD = 6
+export const TASK_CARD_HEIGHT = 162
+export const TASK_GRID_GAP = 16
+export const TASK_GRID_OVERSCAN_ROWS = 3
 
 export interface SelectionBox {
   left: number

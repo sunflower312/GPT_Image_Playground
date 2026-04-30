@@ -13,6 +13,9 @@ import TaskCard from '../TaskCard'
 interface TaskGridBodyProps {
   filteredTaskCount: number
   renderedTasks: TaskRecord[]
+  renderedTaskRangeLabel: string
+  topSpacerHeight: number
+  bottomSpacerHeight: number
   categories: CategoryConfig[]
   providers: ProviderConfig[]
   selectedIdSet: Set<string>
@@ -20,8 +23,8 @@ interface TaskGridBodyProps {
   activeCategoryLabel: string
   searchQuery: string
   taskView: TaskView
-  loadMoreRef: RefObject<HTMLDivElement | null>
-  onLoadMore: () => void
+  gridRef: RefObject<HTMLDivElement | null>
+  onGridMouseDownCapture: (event: ReactMouseEvent<HTMLDivElement>) => void
   onTaskOpen: (taskId: string) => void
   onToggleTaskSelection: (taskId: string) => void
   onTaskReuse: (task: TaskRecord) => void
@@ -39,6 +42,9 @@ interface TaskGridBodyProps {
 export default function TaskGridBody({
   filteredTaskCount,
   renderedTasks,
+  renderedTaskRangeLabel,
+  topSpacerHeight,
+  bottomSpacerHeight,
   categories,
   providers,
   selectedIdSet,
@@ -46,8 +52,8 @@ export default function TaskGridBody({
   activeCategoryLabel,
   searchQuery,
   taskView,
-  loadMoreRef,
-  onLoadMore,
+  gridRef,
+  onGridMouseDownCapture,
   onTaskOpen,
   onToggleTaskSelection,
   onTaskReuse,
@@ -95,12 +101,18 @@ export default function TaskGridBody({
   return (
     <>
       <div className="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
-        <span>
-          已显示 {Math.min(renderedTasks.length, filteredTaskCount)} / {filteredTaskCount} 条
-        </span>
+        <span>当前渲染 {renderedTaskRangeLabel} / {filteredTaskCount} 条</span>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div
+        ref={gridRef}
+        onMouseDownCapture={onGridMouseDownCapture}
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      >
+        {topSpacerHeight > 0 && (
+          <div aria-hidden className="col-span-full" style={{ height: `${topSpacerHeight}px` }} />
+        )}
+
         {renderedTasks.map((task) => (
           <TaskCard
             key={task.id}
@@ -124,20 +136,10 @@ export default function TaskGridBody({
             onContextMenu={(event) => onTaskContextMenu(task, event)}
           />
         ))}
+        {bottomSpacerHeight > 0 && (
+          <div aria-hidden className="col-span-full" style={{ height: `${bottomSpacerHeight}px` }} />
+        )}
       </div>
-
-      {renderedTasks.length < filteredTaskCount && (
-        <div className="flex flex-col items-center gap-3 pt-2">
-          <div ref={loadMoreRef} className="h-4 w-full" />
-          <button
-            type="button"
-            onClick={onLoadMore}
-            className="rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-50 dark:border-white/[0.08] dark:text-gray-300 dark:hover:bg-white/[0.04]"
-          >
-            加载更多
-          </button>
-        </div>
-      )}
     </>
   )
 }

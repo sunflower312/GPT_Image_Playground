@@ -23,7 +23,6 @@ interface UseTaskGridDerivedStateOptions {
   filterStatus: TaskStatus | 'all'
   taskView: 'gallery' | 'trash'
   selectedTaskIds: string[]
-  visibleCount: number
 }
 
 export function useTaskGridDerivedState(options: UseTaskGridDerivedStateOptions) {
@@ -36,7 +35,6 @@ export function useTaskGridDerivedState(options: UseTaskGridDerivedStateOptions)
     filterStatus,
     taskView,
     selectedTaskIds,
-    visibleCount,
   } = options
 
   const categoryIdSet = useMemo(
@@ -100,10 +98,6 @@ export function useTaskGridDerivedState(options: UseTaskGridDerivedStateOptions)
     taskView,
   ])
 
-  const renderedTasks = useMemo(
-    () => filteredTasks.slice(0, visibleCount),
-    [filteredTasks, visibleCount],
-  )
   const selectedIdSet = useMemo(() => new Set(selectedTaskIds), [selectedTaskIds])
   const visibleTaskIds = useMemo(() => filteredTasks.map((task) => task.id), [filteredTasks])
   const visibleTaskIdSet = useMemo(() => new Set(visibleTaskIds), [visibleTaskIds])
@@ -136,7 +130,6 @@ export function useTaskGridDerivedState(options: UseTaskGridDerivedStateOptions)
     categoryIdSet,
     sourceTasks,
     filteredTasks,
-    renderedTasks,
     selectedIdSet,
     visibleTaskIds,
     visibleTaskIdSet,

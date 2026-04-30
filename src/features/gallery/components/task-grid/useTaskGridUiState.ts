@@ -1,34 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { ALL_CATEGORY_FILTER, UNCATEGORIZED_CATEGORY_FILTER, type CategoryConfig, type TaskRecord } from '../../../../types'
-import { INITIAL_VISIBLE_TASK_COUNT, type TaskContextMenuState } from './shared'
+import type { TaskContextMenuState } from './shared'
 
 interface UseTaskGridUiStateOptions {
   categories: CategoryConfig[]
   activeCategoryFilter: string
-  searchQuery: string
-  filterStatus: string
-  taskView: 'gallery' | 'trash'
 }
 
 export function useTaskGridUiState(options: UseTaskGridUiStateOptions) {
   const {
     categories,
     activeCategoryFilter,
-    searchQuery,
-    filterStatus,
-    taskView,
   } = options
+  const wrapperRef = useRef<HTMLDivElement | null>(null)
   const gridRef = useRef<HTMLDivElement | null>(null)
-  const loadMoreRef = useRef<HTMLDivElement | null>(null)
-  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_TASK_COUNT)
   const [batchCategoryTarget, setBatchCategoryTarget] = useState(UNCATEGORIZED_CATEGORY_FILTER)
   const [movingTask, setMovingTask] = useState<TaskRecord | null>(null)
   const [moveCategoryTarget, setMoveCategoryTarget] = useState(UNCATEGORIZED_CATEGORY_FILTER)
   const [contextMenuState, setContextMenuState] = useState<TaskContextMenuState | null>(null)
-
-  useEffect(() => {
-    setVisibleCount(INITIAL_VISIBLE_TASK_COUNT)
-  }, [activeCategoryFilter, searchQuery, filterStatus, taskView])
 
   useEffect(() => {
     const nextTarget =
@@ -49,10 +38,8 @@ export function useTaskGridUiState(options: UseTaskGridUiStateOptions) {
   }, [categories, moveCategoryTarget, movingTask])
 
   return {
+    wrapperRef,
     gridRef,
-    loadMoreRef,
-    visibleCount,
-    setVisibleCount,
     batchCategoryTarget,
     setBatchCategoryTarget,
     movingTask,

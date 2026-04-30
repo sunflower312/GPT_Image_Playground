@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { TaskRecord } from '../../../../types'
-import { getCachedImage, ensureImageCached } from '../../../../store'
+import {
+  ensureCachedImageMetadata,
+  ensureImageCached,
+  getCachedImage,
+  getCachedImageMetadata,
+} from '../../../../store/cache'
 import { formatImageRatio } from '../../../../lib/size'
 
 export function useDetailImageState(task: TaskRecord | null, detailTaskId: string | null) {
@@ -23,13 +28,13 @@ export function useDetailImageState(task: TaskRecord | null, detailTaskId: strin
     const ids = [...(task.outputImages || []), ...(task.inputImageIds || [])]
 
     for (const id of ids) {
-      const cached = getCachedImage(id)
+      const cached = getCachedImage(id, 'original')
       if (cached) {
         setImageSrcs((previous) => ({ ...previous, [id]: cached }))
         continue
       }
 
-      void ensureImageCached(id).then((url) => {
+      void ensureImageCached(id, 'original').then((url) => {
         if (!cancelled && url) {
           setImageSrcs((previous) => ({ ...previous, [id]: url }))
         }
@@ -51,33 +56,55 @@ export function useDetailImageState(task: TaskRecord | null, detailTaskId: strin
   useEffect(() => {
     if (!currentOutputImageId || !currentOutputImageSrc) return
 
-    let cancelled = false
-    const image = new Image()
-
-    image.onload = () => {
-      if (!cancelled && image.naturalWidth > 0 && image.naturalHeight > 0) {
-        setImageRatios((previous) => ({
-          ...previous,
-          [currentOutputImageId]: formatImageRatio(image.naturalWidth, image.naturalHeight),
-        }))
-        setImageSizes((previous) => ({
-          ...previous,
-          [currentOutputImageId]: `${image.naturalWidth}×${image.naturalHeight}`,
-        }))
-      }
-    }
-
-    image.src = currentOutputImageSrc
-    if (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0) {
+    const applyImageMeta = (width: number, height: number) => {
       setImageRatios((previous) => ({
         ...previous,
-        [currentOutputImageId]: formatImageRatio(image.naturalWidth, image.naturalHeight),
+        [currentOutputImageId]: formatImageRatio(width, height),
       }))
       setImageSizes((previous) => ({
         ...previous,
-        [currentOutputImageId]: `${image.naturalWidth}×${image.naturalHeight}`,
+        [currentOutputImageId]: `${width}×${height}`,
       }))
     }
+
+    const persistedMeta = getCachedImageMetadata(currentOutputImageId)
+    if (persistedMeta) {
+      applyImageMeta(persistedMeta.width, persistedMeta.height)
+      return
+    }
+
+    let cancelled = false
+    const loadMetaFromImage = () => {
+      const image = new Image()
+
+      image.onload = () => {
+        if (!cancelled && image.naturalWidth > 0 && image.naturalHeight > 0) {
+          applyImageMeta(image.naturalWidth, image.naturalHeight)
+        }
+      }
+
+      image.src = currentOutputImageSrc
+      if (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0) {
+        applyImageMeta(image.naturalWidth, image.naturalHeight)
+      }
+    }
+
+    void ensureCachedImageMetadata(currentOutputImageId)
+      .then((metadata) => {
+        if (!cancelled && metadata) {
+          applyImageMeta(metadata.width, metadata.height)
+          return
+        }
+
+        if (!cancelled) {
+          loadMetaFromImage()
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          loadMetaFromImage()
+        }
+      })
 
     return () => {
       cancelled = true

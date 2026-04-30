@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ensureImageCached, getCachedImage, useStore } from '../../../../store'
+import { useStore } from '../../../../store'
+import { ensureImageCached, getCachedImage } from '../../../../store/cache'
 
 export function useLightboxState() {
   const lightboxImageId = useStore((state) => state.lightboxImageId)
@@ -18,7 +19,7 @@ export function useLightboxState() {
     }
 
     let cancelled = false
-    const cached = getCachedImage(lightboxImageId)
+    const cached = getCachedImage(lightboxImageId, 'original')
     if (cached) {
       setSrc(cached)
       return () => {
@@ -27,7 +28,7 @@ export function useLightboxState() {
     }
 
     setSrc('')
-    void ensureImageCached(lightboxImageId)
+    void ensureImageCached(lightboxImageId, 'original')
       .then((url) => {
         if (!cancelled && url) {
           setSrc(url)

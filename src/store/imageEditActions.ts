@@ -1,6 +1,6 @@
 import { normalizeImageSize } from '../lib/size'
 import type { ImageEditSelection, ImageEditSession, InputImage, TaskRecord } from '../types'
-import { ensureImageCached } from './cache'
+import { ensureImageDataUrl } from './cache'
 import { findProviderById } from './domain'
 import { submitTask } from './runtime'
 import { useStore } from './state'
@@ -15,7 +15,7 @@ export async function editOutputs(task: TaskRecord, preferredImageId?: string) {
     return
   }
 
-  const sourceImageDataUrl = await ensureImageCached(sourceImageId)
+  const sourceImageDataUrl = await ensureImageDataUrl(sourceImageId)
   if (!sourceImageDataUrl) {
     showToast('输出图读取失败，无法进入编辑器', 'error')
     return
@@ -117,6 +117,7 @@ export async function applyImageEditToInput(options: {
   setPrompt(options.prompt.trim())
   setParams({
     ...options.session.params,
+    n: 1,
     size: options.sourceSize
       ? normalizeImageSize(options.sourceSize) || options.session.params.size
       : options.session.params.size,

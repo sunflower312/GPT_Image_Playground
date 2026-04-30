@@ -59,7 +59,8 @@ export function createMaskFromSelection(
   const selectionWidth = clamp(Math.round(selection.width * width), 1, width - selectionLeft)
   const selectionHeight = clamp(Math.round(selection.height * height), 1, height - selectionTop)
 
-  // GPT Image 编辑蒙版更适合使用“透明底 + 选区实心”形式，避免把整张黑底作为像素内容传过去。
+  // 编辑器本地状态只记录选区形状，提交前会在 provider 适配层统一规范成最终蒙版。
+  // 这里保持透明底 + 选区实心，避免把整张黑底写回本地状态。
   context.clearRect(0, 0, width, height)
   context.fillStyle = '#ffffff'
   context.fillRect(selectionLeft, selectionTop, selectionWidth, selectionHeight)

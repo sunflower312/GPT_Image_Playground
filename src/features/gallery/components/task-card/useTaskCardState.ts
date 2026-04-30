@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState, type TouchEventHandler } from 'react'
 import type { TaskRecord } from '../../../../types'
-import { getCachedImage, ensureImageCached } from '../../../../store'
+import {
+  ensureCachedImageMetadata,
+  ensureImageCached,
+  getCachedImage,
+  getCachedImageMetadata,
+} from '../../../../store/cache'
 import { formatImageRatio } from '../../../../lib/size'
 import { TOUCH_ACTION_REVEAL_DELAY, imageMetaCache } from './shared'
 
@@ -37,7 +42,7 @@ export function useTaskCardState(task: TaskRecord) {
       cancelled = true
     }
 
-    const cached = getCachedImage(coverImageId)
+    const cached = getCachedImage(coverImageId, 'thumbnail')
     if (cached) {
       setThumbSrc(cached)
       return () => {
@@ -45,7 +50,7 @@ export function useTaskCardState(task: TaskRecord) {
       }
     }
 
-    void ensureImageCached(coverImageId).then((url) => {
+    void ensureImageCached(coverImageId, 'thumbnail').then((url) => {
       if (!cancelled && url) {
         setThumbSrc(url)
       }
@@ -59,6 +64,16 @@ export function useTaskCardState(task: TaskRecord) {
   useEffect(() => {
     if (!thumbSrc || !coverImageId) return
 
+    const applyCoverMeta = (width: number, height: number) => {
+      const nextMeta = {
+        ratio: formatImageRatio(width, height),
+        size: `${width}×${height}`,
+      }
+      imageMetaCache.set(coverImageId, nextMeta)
+      setCoverRatio(nextMeta.ratio)
+      setCoverSize(nextMeta.size)
+    }
+
     const cachedMeta = imageMetaCache.get(coverImageId)
     if (cachedMeta) {
       setCoverRatio(cachedMeta.ratio)
@@ -66,30 +81,43 @@ export function useTaskCardState(task: TaskRecord) {
       return
     }
 
-    let cancelled = false
-    const image = new Image()
-    image.onload = () => {
-      if (!cancelled && image.naturalWidth > 0 && image.naturalHeight > 0) {
-        const nextMeta = {
-          ratio: formatImageRatio(image.naturalWidth, image.naturalHeight),
-          size: `${image.naturalWidth}×${image.naturalHeight}`,
-        }
-        imageMetaCache.set(coverImageId, nextMeta)
-        setCoverRatio(nextMeta.ratio)
-        setCoverSize(nextMeta.size)
-      }
+    const persistedMeta = getCachedImageMetadata(coverImageId)
+    if (persistedMeta) {
+      applyCoverMeta(persistedMeta.width, persistedMeta.height)
+      return
     }
-    image.src = thumbSrc
 
-    if (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0) {
-      const nextMeta = {
-        ratio: formatImageRatio(image.naturalWidth, image.naturalHeight),
-        size: `${image.naturalWidth}×${image.naturalHeight}`,
+    let cancelled = false
+    const loadMetaFromImage = () => {
+      const image = new Image()
+      image.onload = () => {
+        if (!cancelled && image.naturalWidth > 0 && image.naturalHeight > 0) {
+          applyCoverMeta(image.naturalWidth, image.naturalHeight)
+        }
       }
-      imageMetaCache.set(coverImageId, nextMeta)
-      setCoverRatio(nextMeta.ratio)
-      setCoverSize(nextMeta.size)
+      image.src = thumbSrc
+
+      if (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0) {
+        applyCoverMeta(image.naturalWidth, image.naturalHeight)
+      }
     }
+
+    void ensureCachedImageMetadata(coverImageId)
+      .then((metadata) => {
+        if (!cancelled && metadata) {
+          applyCoverMeta(metadata.width, metadata.height)
+          return
+        }
+
+        if (!cancelled) {
+          loadMetaFromImage()
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          loadMetaFromImage()
+        }
+      })
 
     return () => {
       cancelled = true

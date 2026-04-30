@@ -32,6 +32,7 @@ export default function Lightbox() {
   return (
     <LightboxViewport
       src={src}
+      onClose={close}
       showNav={showNav}
       currentIndex={currentIndex}
       total={total}

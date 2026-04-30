@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react'
-import { applyImageEditToInput, closeImageEditor, useStore } from '../../../../store'
+import { applyImageEditToInput, closeImageEditor, ensureImageDataUrl, useStore } from '../../../../store'
 import { useCloseOnEscape } from '../../../../hooks/useCloseOnEscape'
 import ImageEditCanvasPanel from './ImageEditCanvasPanel'
 import ImageEditSidebar from './ImageEditSidebar'
@@ -71,12 +71,17 @@ export default function ImageEditModal() {
 
     setIsSubmitting(true)
     try {
+      const sourceImageDataUrl = await ensureImageDataUrl(currentImageId)
+      if (!sourceImageDataUrl) {
+        throw new Error('当前图片读取失败，无法写回编辑输入区')
+      }
+
       const maskDataUrl = createMaskFromSelection(naturalSize.width, naturalSize.height, selection)
       await applyImageEditToInput({
         session: {
           ...imageEditSession,
           sourceImageId: currentImageId,
-          sourceImageDataUrl: displayImageSrc,
+          sourceImageDataUrl,
           sourceImageIds: availableImageIds,
         },
         prompt: promptDraft,

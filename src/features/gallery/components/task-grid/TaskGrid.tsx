@@ -1,13 +1,13 @@
 import { useEffect } from 'react'
 import { useStore, reuseConfig, editOutputs, retryTask, toggleTaskFavorite } from '../../../../store'
 import SelectionToolbar from './SelectionToolbar'
-import { LOAD_MORE_TASK_COUNT } from './shared'
 import TaskGridBody from './TaskGridBody'
 import TaskGridOverlays from './TaskGridOverlays'
 import { useBoxSelection } from './useBoxSelection'
 import { useTaskGridActions } from './useTaskGridActions'
 import { useTaskGridDerivedState } from './useTaskGridDerivedState'
 import { useTaskGridUiState } from './useTaskGridUiState'
+import { useVirtualTaskGrid } from './useVirtualTaskGrid'
 
 export default function TaskGrid() {
   const tasks = useStore((state) => state.tasks)
@@ -28,15 +28,11 @@ export default function TaskGrid() {
   const uiState = useTaskGridUiState({
     categories,
     activeCategoryFilter,
-    searchQuery,
-    filterStatus,
-    taskView,
   })
 
   const {
     categoryIdSet,
     filteredTasks,
-    renderedTasks,
     selectedIdSet,
     visibleTaskIds,
     visibleTaskIdSet,
@@ -57,7 +53,13 @@ export default function TaskGrid() {
     filterStatus,
     taskView,
     selectedTaskIds,
-    visibleCount: uiState.visibleCount,
+  })
+
+  const virtualGrid = useVirtualTaskGrid({
+    wrapperRef: uiState.wrapperRef,
+    gridRef: uiState.gridRef,
+    tasks: filteredTasks,
+    layoutVersion: selectedCount,
   })
 
   const {
@@ -111,33 +113,16 @@ export default function TaskGrid() {
   })
 
   useEffect(() => {
-    if (uiState.visibleCount >= filteredTasks.length) return
-
-    const node = uiState.loadMoreRef.current
-    if (!node) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          uiState.setVisibleCount((count) => Math.min(count + LOAD_MORE_TASK_COUNT, filteredTasks.length))
-        }
-      },
-      { rootMargin: '600px 0px' },
-    )
-
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [filteredTasks.length, uiState.loadMoreRef, uiState.setVisibleCount, uiState.visibleCount])
-
-  useEffect(() => {
     if (!uiState.contextMenuState) return
     if (filteredTasks.some((task) => task.id === uiState.contextMenuState?.task.id)) return
     uiState.setContextMenuState(null)
   }, [filteredTasks, uiState.contextMenuState, uiState.setContextMenuState])
 
+  const shouldShowSelectionToolbar = taskView === 'trash' || selectedCount > 0
+
   return (
-    <div className="space-y-3" ref={uiState.gridRef} onMouseDownCapture={handleGridMouseDownCapture}>
-      {selectedCount > 0 && (
+    <div ref={uiState.wrapperRef} className="space-y-3">
+      {shouldShowSelectionToolbar && (
         <SelectionToolbar
           taskView={taskView}
           selectedCount={selectedCount}
@@ -164,7 +149,14 @@ export default function TaskGrid() {
 
       <TaskGridBody
         filteredTaskCount={filteredTasks.length}
-        renderedTasks={renderedTasks}
+        renderedTasks={virtualGrid.renderedTasks}
+        renderedTaskRangeLabel={
+          virtualGrid.renderedTasks.length > 0
+            ? `${virtualGrid.startIndex + 1}-${virtualGrid.endIndex}`
+            : '0'
+        }
+        topSpacerHeight={virtualGrid.topSpacerHeight}
+        bottomSpacerHeight={virtualGrid.bottomSpacerHeight}
         categories={categories}
         providers={providers}
         selectedIdSet={selectedIdSet}
@@ -172,10 +164,8 @@ export default function TaskGrid() {
         activeCategoryLabel={activeCategoryLabel}
         searchQuery={searchQuery}
         taskView={taskView}
-        loadMoreRef={uiState.loadMoreRef}
-        onLoadMore={() =>
-          uiState.setVisibleCount((count) => Math.min(count + LOAD_MORE_TASK_COUNT, filteredTasks.length))
-        }
+        gridRef={uiState.gridRef}
+        onGridMouseDownCapture={handleGridMouseDownCapture}
         onTaskOpen={handleTaskOpen}
         onToggleTaskSelection={toggleTaskSelection}
         onTaskReuse={(task) => {

@@ -2,6 +2,7 @@ import type { CSSProperties, MouseEventHandler, PointerEventHandler, RefObject }
 
 interface LightboxViewportProps {
   src: string
+  onClose: () => void
   showNav: boolean
   currentIndex: number
   total: number
@@ -25,6 +26,7 @@ interface LightboxViewportProps {
 export default function LightboxViewport(props: LightboxViewportProps) {
   const {
     src,
+    onClose,
     showNav,
     currentIndex,
     total,
@@ -47,6 +49,8 @@ export default function LightboxViewport(props: LightboxViewportProps) {
 
   const navButtonClass =
     'absolute top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur-sm transition-all hover:bg-black/60'
+  const closeButtonClass =
+    'absolute right-4 top-4 z-20 rounded-full border border-white/10 bg-black/45 p-2 text-white/90 shadow-lg backdrop-blur-md transition hover:bg-black/60 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/40 sm:right-5 sm:top-5'
 
   return (
     <div
@@ -68,6 +72,22 @@ export default function LightboxViewport(props: LightboxViewportProps) {
         className="absolute inset-0 animate-fade-in bg-black/70 backdrop-blur-md"
         onClick={onBackdropClick}
       />
+      <button
+        type="button"
+        className={closeButtonClass}
+        aria-label="关闭大图"
+        onPointerDown={(event) => {
+          event.stopPropagation()
+        }}
+        onClick={(event) => {
+          event.stopPropagation()
+          onClose()
+        }}
+      >
+        <svg className="h-5 w-5 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
       {/* 图片容器 */}
       <div className="relative z-10 animate-zoom-in">
         <div
