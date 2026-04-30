@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useStore } from '../../../store'
+import { copyImageToClipboard } from '../../../lib/clipboardImage'
 
 export default function ImageContextMenu() {
   const [menuInfo, setMenuInfo] = useState<{ src: string; x: number; y: number } | null>(null)
@@ -63,11 +64,7 @@ export default function ImageContextMenu() {
     e.stopPropagation()
     setMenuInfo(null)
     try {
-      const res = await fetch(menuInfo.src)
-      const blob = await res.blob()
-      await navigator.clipboard.write([
-        new ClipboardItem({ [blob.type]: blob }),
-      ])
+      await copyImageToClipboard(menuInfo.src)
       showToast('图片已复制', 'success')
     } catch (err) {
       console.error(err)

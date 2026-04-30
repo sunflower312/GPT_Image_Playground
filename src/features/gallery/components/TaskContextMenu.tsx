@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, type ReactNode } from 'react'
-import { canEditTaskOutputs, type TaskRecord } from '../../../types'
+import type { TaskRecord } from '../../../types'
+import { canEditTaskOutputs, canRetryTask } from '../../../store'
 
 interface Props {
   task: TaskRecord | null
@@ -98,7 +99,7 @@ export default function TaskContextMenu({
   const position = useMemo(() => {
     const menuWidth = 188
     const hasEditAction = task ? canEditTaskOutputs(task) : false
-    const hasRetryAction = task?.status === 'error' || task?.status === 'partial_error'
+    const hasRetryAction = task ? canRetryTask(task) : false
     const actionCount = 5 + (hasEditAction ? 1 : 0) + (hasRetryAction ? 1 : 0)
     const menuHeight = isInRecycleBin ? 148 : 32 + actionCount * 36
     let left = x
@@ -117,7 +118,7 @@ export default function TaskContextMenu({
   if (!task) return null
 
   const canEditOutputs = canEditTaskOutputs(task)
-  const canRetry = task.status === 'error' || task.status === 'partial_error'
+  const canRetry = canRetryTask(task)
   const showEditAction = canEditOutputs
 
   return (

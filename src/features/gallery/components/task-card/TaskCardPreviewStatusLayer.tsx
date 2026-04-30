@@ -1,8 +1,10 @@
 import type { TaskRecord } from '../../../../types'
+import { isTaskRunExceptional, resolveTaskRunOutcome } from '../../../../store'
 
 interface TaskCardPreviewStatusLayerProps {
   task: TaskRecord
   thumbSrc: string
+  imageFit?: 'cover' | 'contain'
   progressCountLabel: string | null
   statusLabel: string
   onAbort: () => void
@@ -30,20 +32,23 @@ function RunningAbortButton({ onAbort }: { onAbort: () => void }) {
 export default function TaskCardPreviewStatusLayer({
   task,
   thumbSrc,
+  imageFit = 'cover',
   progressCountLabel,
   statusLabel,
   onAbort,
 }: TaskCardPreviewStatusLayerProps) {
   const isRunning = task.status === 'running'
-  const isExceptional = task.status === 'error' || task.status === 'partial_error'
+  const runOutcome = resolveTaskRunOutcome(task)
+  const isExceptional = isTaskRunExceptional(task)
   const hasGeneratedOutputs = Array.isArray(task.outputImages) && task.outputImages.length > 0
   const runningStatusContentClass =
     'transition duration-150 group-hover/task-preview:scale-95 group-hover/task-preview:opacity-0'
+  const imageFitClass = imageFit === 'contain' ? 'object-contain' : 'object-cover'
 
   if (isRunning) {
     return thumbSrc ? (
       <>
-        <img src={thumbSrc} className="h-full w-full object-cover" loading="lazy" alt="" />
+        <img src={thumbSrc} className={`h-full w-full ${imageFitClass}`} loading="lazy" alt="" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/[0.65] via-black/10 to-black/[0.35]" />
         <div className="absolute inset-0 bg-black/30 opacity-0 transition duration-150 group-hover/task-preview:opacity-100" />
         <div className={`absolute inset-x-0 bottom-2 flex flex-col items-center gap-1 px-2 text-white ${runningStatusContentClass}`}>
@@ -84,18 +89,18 @@ export default function TaskCardPreviewStatusLayer({
   if (isExceptional) {
     return hasGeneratedOutputs && thumbSrc ? (
       <>
-        <img src={thumbSrc} className="h-full w-full object-cover" loading="lazy" alt="" />
+        <img src={thumbSrc} className={`h-full w-full ${imageFitClass}`} loading="lazy" alt="" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/[0.15] to-black/[0.35]" />
         <div className="absolute inset-x-0 bottom-2 flex flex-col items-center gap-1 px-2 text-white">
           <span
             className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium backdrop-blur-sm ${
-              task.isAborted ? 'bg-amber-500/75' : task.status === 'partial_error' ? 'bg-orange-500/75' : 'bg-red-500/75'
+              runOutcome === 'aborted' ? 'bg-amber-500/75' : runOutcome === 'partial_error' ? 'bg-orange-500/75' : 'bg-red-500/75'
             }`}
           >
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {task.isAborted ? (
+              {runOutcome === 'aborted' ? (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9h6v6H9zM21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              ) : task.status === 'partial_error' ? (
+              ) : runOutcome === 'partial_error' ? (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M4.93 19h14.14c1.54 0 2.5-1.67 1.73-3L13.73 3c-.77-1.33-2.69-1.33-3.46 0L3.2 16c-.77 1.33.19 3 1.73 3z" />
               ) : (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -113,20 +118,20 @@ export default function TaskCardPreviewStatusLayer({
     ) : (
       <div className="flex flex-col items-center gap-1 px-2">
         <svg
-          className={`h-7 w-7 ${task.isAborted ? 'text-amber-400' : task.status === 'partial_error' ? 'text-orange-400' : 'text-red-400'}`}
+          className={`h-7 w-7 ${runOutcome === 'aborted' ? 'text-amber-400' : runOutcome === 'partial_error' ? 'text-orange-400' : 'text-red-400'}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          {task.isAborted ? (
+          {runOutcome === 'aborted' ? (
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9h6v6H9zM21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          ) : task.status === 'partial_error' ? (
+          ) : runOutcome === 'partial_error' ? (
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M4.93 19h14.14c1.54 0 2.5-1.67 1.73-3L13.73 3c-.77-1.33-2.69-1.33-3.46 0L3.2 16c-.77 1.33.19 3 1.73 3z" />
           ) : (
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           )}
         </svg>
-        <span className={`text-center text-xs leading-tight ${task.isAborted ? 'text-amber-400' : task.status === 'partial_error' ? 'text-orange-400' : 'text-red-400'}`}>
+        <span className={`text-center text-xs leading-tight ${runOutcome === 'aborted' ? 'text-amber-400' : runOutcome === 'partial_error' ? 'text-orange-400' : 'text-red-400'}`}>
           {statusLabel}
         </span>
       </div>
@@ -136,7 +141,7 @@ export default function TaskCardPreviewStatusLayer({
   if (task.status === 'done' && thumbSrc) {
     return (
       <>
-        <img src={thumbSrc} className="h-full w-full object-cover" loading="lazy" alt="" />
+        <img src={thumbSrc} className={`h-full w-full ${imageFitClass}`} loading="lazy" alt="" />
         {task.outputImages.length > 1 && (
           <span className="absolute bottom-2 right-2 rounded-full bg-black/[0.65] px-2 py-0.5 text-[11px] font-medium text-white">
             {task.outputImages.length}

@@ -1,13 +1,21 @@
 import { useEffect } from 'react'
-import { useStore, reuseConfig, editOutputs, retryTask, toggleTaskFavorite } from '../../../../store'
+import {
+  openGalleryTaskDetail,
+  runGalleryEditOutputs,
+  runGalleryRetry,
+  runGalleryReuse,
+  runGalleryToggleFavorite,
+  useStore,
+} from '../../../../store'
 import SelectionToolbar from './SelectionToolbar'
 import TaskGridBody from './TaskGridBody'
+import TaskGridImageMode from './TaskGridImageMode'
 import TaskGridOverlays from './TaskGridOverlays'
 import { useBoxSelection } from './useBoxSelection'
 import { useTaskGridActions } from './useTaskGridActions'
 import { useTaskGridDerivedState } from './useTaskGridDerivedState'
+import { useGalleryImageTaskImport } from './useGalleryImageTaskImport'
 import { useTaskGridUiState } from './useTaskGridUiState'
-import { useVirtualTaskGrid } from './useVirtualTaskGrid'
 
 export default function TaskGrid() {
   const tasks = useStore((state) => state.tasks)
@@ -17,21 +25,19 @@ export default function TaskGrid() {
   const searchQuery = useStore((state) => state.searchQuery)
   const filterStatus = useStore((state) => state.filterStatus)
   const taskView = useStore((state) => state.taskView)
+  const galleryDisplayMode = useStore((state) => state.galleryDisplayMode)
   const selectedTaskIds = useStore((state) => state.selectedTaskIds)
   const setSelectedTaskIds = useStore((state) => state.setSelectedTaskIds)
   const toggleTaskSelection = useStore((state) => state.toggleTaskSelection)
   const clearSelectedTasks = useStore((state) => state.clearSelectedTasks)
-  const setDetailTaskId = useStore((state) => state.setDetailTaskId)
-  const setConfirmDialog = useStore((state) => state.setConfirmDialog)
-  const showToast = useStore((state) => state.showToast)
 
   const uiState = useTaskGridUiState({
     categories,
     activeCategoryFilter,
   })
+  const galleryImageTaskImport = useGalleryImageTaskImport()
 
   const {
-    categoryIdSet,
     filteredTasks,
     selectedIdSet,
     visibleTaskIds,
@@ -54,13 +60,7 @@ export default function TaskGrid() {
     taskView,
     selectedTaskIds,
   })
-
-  const virtualGrid = useVirtualTaskGrid({
-    wrapperRef: uiState.wrapperRef,
-    gridRef: uiState.gridRef,
-    tasks: filteredTasks,
-    layoutVersion: selectedCount,
-  })
+  const isImageMode = taskView === 'gallery' && galleryDisplayMode === 'image'
 
   const {
     selectionBox,
@@ -105,11 +105,8 @@ export default function TaskGrid() {
     setMovingTask: uiState.setMovingTask,
     setMoveCategoryTarget: uiState.setMoveCategoryTarget,
     setContextMenuState: uiState.setContextMenuState,
-    setDetailTaskId,
-    setConfirmDialog,
-    showToast,
+    setDetailTaskId: useStore.getState().setDetailTaskId,
     shouldSuppressTaskOpen,
-    categoryIdSet,
   })
 
   useEffect(() => {
@@ -121,72 +118,101 @@ export default function TaskGrid() {
   const shouldShowSelectionToolbar = taskView === 'trash' || selectedCount > 0
 
   return (
-    <div ref={uiState.wrapperRef} className="space-y-3">
+    <div
+      ref={uiState.wrapperRef}
+      tabIndex={0}
+      {...galleryImageTaskImport.bind}
+      className={`relative space-y-3 rounded-3xl outline-none transition focus-visible:ring-2 focus-visible:ring-blue-300/70 focus-visible:ring-offset-4 focus-visible:ring-offset-transparent ${
+        galleryImageTaskImport.isImporting
+          ? 'ring-2 ring-blue-300/70 ring-offset-4 ring-offset-transparent'
+          : ''
+      }`}
+    >
       {shouldShowSelectionToolbar && (
-        <SelectionToolbar
-          taskView={taskView}
-          selectedCount={selectedCount}
-          visibleSelectedCount={visibleSelectedCount}
-          allSelectedFavorited={allSelectedFavorited}
-          batchCategoryTarget={uiState.batchCategoryTarget}
-          categoryOptions={categoryOptions}
-          hasVisibleTasks={hasVisibleTasks}
-          allVisibleSelected={allVisibleSelected}
-          onBatchCategoryTargetChange={uiState.setBatchCategoryTarget}
-          onBatchFavorite={() => {
-            void handleBatchFavorite()
-          }}
-          onBatchMoveCategory={() => {
-            void handleBatchMoveCategory()
-          }}
-          onToggleAllVisible={handleToggleAllVisible}
-          onClearSelected={clearSelectedTasks}
-          onBatchRestore={handleBatchRestore}
-          onBatchPurge={handleBatchPurge}
-          onBatchDelete={handleBatchDelete}
-        />
+        <div className="sticky top-[6.2rem] z-30">
+          <SelectionToolbar
+            taskView={taskView}
+            selectedCount={selectedCount}
+            visibleSelectedCount={visibleSelectedCount}
+            allSelectedFavorited={allSelectedFavorited}
+            batchCategoryTarget={uiState.batchCategoryTarget}
+            categoryOptions={categoryOptions}
+            hasVisibleTasks={hasVisibleTasks}
+            allVisibleSelected={allVisibleSelected}
+            onBatchCategoryTargetChange={uiState.setBatchCategoryTarget}
+            onBatchFavorite={() => {
+              void handleBatchFavorite()
+            }}
+            onBatchMoveCategory={() => {
+              void handleBatchMoveCategory()
+            }}
+            onToggleAllVisible={handleToggleAllVisible}
+            onClearSelected={clearSelectedTasks}
+            onBatchRestore={handleBatchRestore}
+            onBatchPurge={handleBatchPurge}
+            onBatchDelete={handleBatchDelete}
+          />
+        </div>
       )}
 
-      <TaskGridBody
-        filteredTaskCount={filteredTasks.length}
-        renderedTasks={virtualGrid.renderedTasks}
-        renderedTaskRangeLabel={
-          virtualGrid.renderedTasks.length > 0
-            ? `${virtualGrid.startIndex + 1}-${virtualGrid.endIndex}`
-            : '0'
-        }
-        topSpacerHeight={virtualGrid.topSpacerHeight}
-        bottomSpacerHeight={virtualGrid.bottomSpacerHeight}
-        categories={categories}
-        providers={providers}
-        selectedIdSet={selectedIdSet}
-        activeCategoryFilter={activeCategoryFilter}
-        activeCategoryLabel={activeCategoryLabel}
-        searchQuery={searchQuery}
-        taskView={taskView}
-        gridRef={uiState.gridRef}
-        onGridMouseDownCapture={handleGridMouseDownCapture}
-        onTaskOpen={handleTaskOpen}
-        onToggleTaskSelection={toggleTaskSelection}
-        onTaskReuse={(task) => {
-          void reuseConfig(task)
-        }}
-        onTaskEditOutputs={(task) => {
-          void editOutputs(task)
-        }}
-        onTaskRetry={(task) => {
-          void retryTask(task)
-        }}
-        onTaskAbort={handleAbort}
-        onTaskToggleFavorite={(task) => {
-          void toggleTaskFavorite(task)
-        }}
-        onTaskMoveCategory={openMoveCategoryModal}
-        onTaskDelete={handleDelete}
-        onTaskPurge={handlePurge}
-        onTaskRestore={handleRestore}
-        onTaskContextMenu={handleTaskContextMenu}
-      />
+      {isImageMode ? (
+        <TaskGridImageMode
+          filteredTaskCount={filteredTasks.length}
+          tasks={filteredTasks}
+          selectedCount={selectedCount}
+          selectedIdSet={selectedIdSet}
+          activeCategoryFilter={activeCategoryFilter}
+          activeCategoryLabel={activeCategoryLabel}
+          searchQuery={searchQuery}
+          taskView={taskView}
+          wrapperRef={uiState.wrapperRef}
+          gridRef={uiState.gridRef}
+          onGridMouseDownCapture={handleGridMouseDownCapture}
+          onTaskOpen={handleTaskOpen}
+          onToggleTaskSelection={toggleTaskSelection}
+          onTaskAbort={handleAbort}
+          onTaskToggleFavorite={(task) => {
+            runGalleryToggleFavorite(task)
+          }}
+          onTaskContextMenu={handleTaskContextMenu}
+        />
+      ) : (
+        <TaskGridBody
+          filteredTaskCount={filteredTasks.length}
+          tasks={filteredTasks}
+          selectedCount={selectedCount}
+          categories={categories}
+          providers={providers}
+          selectedIdSet={selectedIdSet}
+          activeCategoryFilter={activeCategoryFilter}
+          activeCategoryLabel={activeCategoryLabel}
+          searchQuery={searchQuery}
+          taskView={taskView}
+          wrapperRef={uiState.wrapperRef}
+          gridRef={uiState.gridRef}
+          onGridMouseDownCapture={handleGridMouseDownCapture}
+          onTaskOpen={handleTaskOpen}
+          onToggleTaskSelection={toggleTaskSelection}
+          onTaskReuse={(task) => {
+            runGalleryReuse(task)
+          }}
+          onTaskEditOutputs={(task) => {
+            runGalleryEditOutputs(task)
+          }}
+          onTaskRetry={(task) => {
+            runGalleryRetry(task)
+          }}
+          onTaskAbort={handleAbort}
+          onTaskToggleFavorite={(task) => {
+            runGalleryToggleFavorite(task)
+          }}
+          onTaskMoveCategory={openMoveCategoryModal}
+          onTaskDelete={handleDelete}
+          onTaskPurge={handlePurge}
+          onTaskRestore={handleRestore}
+          onTaskContextMenu={handleTaskContextMenu}
+        />
+      )}
 
       <TaskGridOverlays
         movingTask={uiState.movingTask}
@@ -195,13 +221,14 @@ export default function TaskGrid() {
         selectionBox={selectionBox}
         contextMenuState={uiState.contextMenuState}
         taskView={taskView}
+        galleryImageTaskImporting={galleryImageTaskImport.isImporting}
         onMoveCategoryTargetChange={uiState.setMoveCategoryTarget}
         onCloseMoveCategory={() => uiState.setMovingTask(null)}
         onConfirmMoveCategory={() => {
           void handleSingleTaskMoveCategory()
         }}
         onCloseContextMenu={() => uiState.setContextMenuState(null)}
-        onOpenTask={handleTaskOpen}
+        onOpenTask={openGalleryTaskDetail}
         onMoveTaskCategory={openMoveCategoryModal}
         onDeleteTask={handleDelete}
         onPurgeTask={handlePurge}

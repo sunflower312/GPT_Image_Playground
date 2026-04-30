@@ -1,20 +1,53 @@
-import { useEffect, useMemo, useState } from 'react'
+import { type ChangeEventHandler, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  createCategory,
-  deleteCategory,
-  removeTasks,
-  renameCategory,
+  confirmGalleryDeleteCategory,
+  confirmGalleryClearFailedTasks,
+  createSingleImageTasksFromFiles,
+  isTaskInRecycleBin,
+  runGalleryCreateCategory,
+  runGalleryRenameCategory,
   useStore,
 } from '../../../../store'
 import {
   ALL_CATEGORY_FILTER,
   FAVORITES_CATEGORY_FILTER,
   UNCATEGORIZED_CATEGORY_FILTER,
-  isTaskInRecycleBin,
   resolveCategoryFilterName,
 } from '../../../../types'
 import { type CategoryChipItem, type CategoryEditorMode } from './shared'
 import { useCategoryLooping } from './useCategoryLooping'
+
+type ScrollContainer = Window | HTMLElement
+
+function isWindowScrollContainer(container: ScrollContainer): container is Window {
+  return container === window
+}
+
+function isScrollableOverflow(value: string): boolean {
+  return /(auto|scroll|overlay)/.test(value)
+}
+
+function resolveScrollContainer(element: HTMLElement | null): ScrollContainer {
+  let current = element?.parentElement ?? null
+
+  while (current) {
+    const style = window.getComputedStyle(current)
+    if (isScrollableOverflow(style.overflowY) || isScrollableOverflow(style.overflow)) {
+      return current
+    }
+    current = current.parentElement
+  }
+
+  return window
+}
+
+function readScrollTop(container: ScrollContainer): number {
+  return isWindowScrollContainer(container) ? window.scrollY : container.scrollTop
+}
+
+function readViewportHeight(container: ScrollContainer): number {
+  return isWindowScrollContainer(container) ? window.innerHeight : container.clientHeight
+}
 
 export function useSearchBarState() {
   const tasks = useStore((state) => state.tasks)
@@ -27,13 +60,17 @@ export function useSearchBarState() {
   const setFilterStatus = useStore((state) => state.setFilterStatus)
   const taskView = useStore((state) => state.taskView)
   const setTaskView = useStore((state) => state.setTaskView)
-  const setConfirmDialog = useStore((state) => state.setConfirmDialog)
-  const showToast = useStore((state) => state.showToast)
+  const galleryDisplayMode = useStore((state) => state.galleryDisplayMode)
+  const setGalleryDisplayMode = useStore((state) => state.setGalleryDisplayMode)
 
   const [editorMode, setEditorMode] = useState<CategoryEditorMode>('idle')
   const [categoryInput, setCategoryInput] = useState('')
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
-  const [mobileControlsCollapsed, setMobileControlsCollapsed] = useState(() => window.innerWidth < 768)
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false)
+  const [showScrollTopButton, setShowScrollTopButton] = useState(false)
+  const rootRef = useRef<HTMLDivElement | null>(null)
+  const scrollContainerRef = useRef<ScrollContainer>(window)
+  const uploadImageInputRef = useRef<HTMLInputElement | null>(null)
 
   const activeGalleryTasks = useMemo(
     () => tasks.filter((task) => !isTaskInRecycleBin(task)),
@@ -90,7 +127,6 @@ export function useSearchBarState() {
   const categoryChipItems = useMemo<CategoryChipItem[]>(
     () => [
       { label: '全部', value: ALL_CATEGORY_FILTER, count: activeGalleryTasks.length },
-      { label: '收藏', value: FAVORITES_CATEGORY_FILTER, count: favoriteCount },
       { label: '未分类', value: UNCATEGORIZED_CATEGORY_FILTER, count: uncategorizedCount },
       ...categories.map((category) => ({
         label: category.name,
@@ -98,7 +134,7 @@ export function useSearchBarState() {
         count: categoryCounts.get(category.id) ?? 0,
       })),
     ],
-    [activeGalleryTasks.length, categories, categoryCounts, favoriteCount, uncategorizedCount],
+    [activeGalleryTasks.length, categories, categoryCounts, uncategorizedCount],
   )
   const categoryChipLayoutSignature = useMemo(
     () => categoryChipItems.map((item) => `${item.value}:${item.label}:${item.count}`).join('|'),
@@ -134,8 +170,24 @@ export function useSearchBarState() {
   }, [taskView])
 
   useEffect(() => {
-    setMobileControlsCollapsed(isMobile)
-  }, [isMobile])
+    const scrollContainer = resolveScrollContainer(rootRef.current)
+    scrollContainerRef.current = scrollContainer
+
+    const handleWindowScroll = () => {
+      setShowScrollTopButton(
+        readScrollTop(scrollContainer) > readViewportHeight(scrollContainer),
+      )
+    }
+
+    handleWindowScroll()
+    scrollContainer.addEventListener('scroll', handleWindowScroll, { passive: true })
+    window.addEventListener('resize', handleWindowScroll)
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleWindowScroll)
+      window.removeEventListener('resize', handleWindowScroll)
+    }
+  }, [])
 
   useEffect(() => {
     if (editorMode === 'rename') {
@@ -143,52 +195,65 @@ export function useSearchBarState() {
     }
   }, [activeCategory, editorMode])
 
+  useEffect(() => {
+    if (taskView !== 'gallery' && activeCategoryFilter === FAVORITES_CATEGORY_FILTER) {
+      setActiveCategoryFilter(ALL_CATEGORY_FILTER)
+    }
+  }, [activeCategoryFilter, setActiveCategoryFilter, taskView])
+
   const resetEditor = () => {
     setEditorMode('idle')
     setCategoryInput('')
   }
 
   const handleSubmitCategory = async () => {
-    try {
-      if (editorMode === 'create') {
-        createCategory(categoryInput)
-      } else if (editorMode === 'rename' && activeCategory) {
-        await renameCategory(activeCategory.id, categoryInput)
+    if (editorMode === 'create') {
+      if (!runGalleryCreateCategory(categoryInput)) {
+        return
+      }
+      resetEditor()
+      return
+    }
+
+    if (editorMode === 'rename' && activeCategory) {
+      if (!(await runGalleryRenameCategory(activeCategory.id, categoryInput))) {
+        return
       }
 
       resetEditor()
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : String(error), 'error')
     }
   }
 
   const handleDeleteCategory = () => {
     if (!activeCategory) return
 
-    setConfirmDialog({
-      title: '删除分类',
-      message: `确定删除分类「${activeCategory.name}」吗？该分类下的项目会移入未分类。`,
-      confirmText: '删除分类',
-      action: () => {
-        void deleteCategory(activeCategory.id).catch((error) => {
-          showToast(error instanceof Error ? error.message : String(error), 'error')
-        })
-      },
-    })
+    confirmGalleryDeleteCategory(activeCategory.id)
   }
 
   const handleClearFailedTasks = () => {
-    setConfirmDialog({
-      title: '清理失败项目',
-      message: `确定将全部 ${failedActiveTasks.length} 条失败项目移入回收站吗？它们的提示词、配置和图片会暂时保留，可在回收站恢复。`,
-      confirmText: '移入回收站',
-      action: () => removeTasks(failedActiveTasks),
-    })
+    confirmGalleryClearFailedTasks(failedActiveTasks)
   }
+
+  const handleUploadSingleImageTasks: ChangeEventHandler<HTMLInputElement> = (event) => {
+    const { files } = event.currentTarget
+    if (files?.length) {
+      void createSingleImageTasksFromFiles(files)
+    }
+    event.currentTarget.value = ''
+  }
+
+  const activePanelFilterCount = [
+    filterStatus !== 'all',
+    Boolean(searchQuery.trim()),
+    taskView === 'gallery' &&
+      activeCategoryFilter !== ALL_CATEGORY_FILTER &&
+      activeCategoryFilter !== FAVORITES_CATEGORY_FILTER,
+  ].filter(Boolean).length
 
   return {
     isMobile,
     taskView,
+    galleryDisplayMode,
     activeCategoryFilter,
     activeCategory,
     activeCategoryLabel,
@@ -198,34 +263,64 @@ export function useSearchBarState() {
     editorMode,
     categoryInput,
     generationTargetLabel,
-    mobileControlsCollapsed,
     activeGalleryCount: activeGalleryTasks.length,
     recycleBinCount,
+    favoriteCount,
     failedActiveCount: failedActiveTasks.length,
     hasSearchQuery: Boolean(searchQuery.trim()),
+    isFavoriteFilterActive:
+      taskView === 'gallery' && activeCategoryFilter === FAVORITES_CATEGORY_FILTER,
+    isFilterPanelOpen,
+    activePanelFilterCount,
+    showScrollTopButton,
     categoryChipItems,
     categoryViewportRef,
     categorySegmentRef,
     categoryLoopEnabled,
+    rootRef,
+    uploadImageInputRef,
     handleCategoryTrackScroll,
     setTaskView,
+    setGalleryDisplayMode,
     setActiveCategoryFilter,
     setFilterStatus,
     setSearchQuery,
-    setMobileControlsCollapsed,
     setCategoryInput,
+    setIsFilterPanelOpen,
     handleStartCreate: () => {
       setEditorMode('create')
+      setIsFilterPanelOpen(true)
       setCategoryInput('')
     },
     handleStartRename: () => {
       if (!activeCategory) return
+      setIsFilterPanelOpen(true)
       setEditorMode('rename')
       setCategoryInput(activeCategory.name)
     },
     handleDeleteCategory,
     handleSubmitCategory,
     handleClearFailedTasks,
+    handleToggleFavoriteFilter: () => {
+      if (taskView !== 'gallery') {
+        setTaskView('gallery')
+      }
+      setActiveCategoryFilter(
+        activeCategoryFilter === FAVORITES_CATEGORY_FILTER
+          ? ALL_CATEGORY_FILTER
+          : FAVORITES_CATEGORY_FILTER,
+      )
+    },
+    handleScrollToTop: () => {
+      const scrollContainer = scrollContainerRef.current
+      if (isWindowScrollContainer(scrollContainer)) {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        return
+      }
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' })
+    },
+    handleOpenUploadImagePicker: () => uploadImageInputRef.current?.click(),
+    handleUploadSingleImageTasks,
     resetEditor,
   }
 }

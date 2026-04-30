@@ -1,29 +1,70 @@
 import { useEffect, useRef, useState, type TouchEventHandler } from 'react'
 import type { TaskRecord } from '../../../../types'
-import {
-  ensureCachedImageMetadata,
-  ensureImageCached,
-  getCachedImage,
-  getCachedImageMetadata,
-} from '../../../../store/cache'
 import { formatImageRatio } from '../../../../lib/size'
-import { TOUCH_ACTION_REVEAL_DELAY, imageMetaCache } from './shared'
+import { TOUCH_ACTION_REVEAL_DELAY } from './shared'
+import { useImageAssetView } from '../../../../hooks/useImageAssetView'
+import { useNearViewport } from '../../../../hooks/useNearViewport'
 
-export function useTaskCardState(task: TaskRecord) {
+interface UseTaskCardStateOptions {
+  preferredImageVariant?: 'thumbnail' | 'original'
+  loadPreferredImageWhenVisible?: boolean
+  preferredVisibleRootMargin?: string
+  loadThumbnailWhenVisible?: boolean
+  thumbnailVisibleRootMargin?: string
+}
+
+export function useTaskCardState(task: TaskRecord, options: UseTaskCardStateOptions = {}) {
   const cardRef = useRef<HTMLDivElement | null>(null)
   const touchRevealTimerRef = useRef<number | null>(null)
   const suppressNextClickRef = useRef(false)
 
-  const [thumbSrc, setThumbSrc] = useState('')
   const [coverRatio, setCoverRatio] = useState('')
   const [coverSize, setCoverSize] = useState('')
   const [now, setNow] = useState(Date.now())
   const [touchActionsVisible, setTouchActionsVisible] = useState(false)
+  const preferredImageVariant = options.preferredImageVariant ?? 'thumbnail'
+  const loadPreferredImageWhenVisible = Boolean(options.loadPreferredImageWhenVisible)
+  const loadThumbnailWhenVisible = Boolean(options.loadThumbnailWhenVisible)
+  const shouldGatePreferredImage =
+    preferredImageVariant === 'original' && loadPreferredImageWhenVisible
+  const shouldGateThumbnail = loadThumbnailWhenVisible
+  const isNearThumbnailViewport = useNearViewport(cardRef, {
+    rootMargin: options.thumbnailVisibleRootMargin ?? '900px 0px',
+    disabled: !shouldGateThumbnail,
+  })
+  const isNearPreferredViewport = useNearViewport(cardRef, {
+    rootMargin: options.preferredVisibleRootMargin ?? '240px 0px',
+    disabled: !shouldGatePreferredImage,
+  })
 
   const coverImageId =
     task.status === 'running'
       ? task.outputImages?.[task.outputImages.length - 1] || ''
       : task.outputImages?.[0] || ''
+  const { url: thumbnailSrc, metadata: thumbnailMetadata } = useImageAssetView(
+    !shouldGateThumbnail || isNearThumbnailViewport ? coverImageId : '',
+    {
+      variant: 'thumbnail',
+      includeMetadata: true,
+      inferMetadataFromUrl: true,
+    },
+  )
+  const { url: preferredSrc, metadata: preferredMetadata } = useImageAssetView(
+    preferredImageVariant === 'original' && (!shouldGatePreferredImage || isNearPreferredViewport)
+      ? coverImageId
+      : '',
+    {
+      variant: preferredImageVariant,
+      includeMetadata: true,
+      inferMetadataFromUrl: true,
+    },
+  )
+  const displaySrc =
+    preferredImageVariant === 'original' ? preferredSrc || thumbnailSrc : thumbnailSrc
+  const coverMetadata =
+    preferredImageVariant === 'original'
+      ? preferredMetadata ?? thumbnailMetadata
+      : thumbnailMetadata
 
   useEffect(() => {
     if (task.status !== 'running') return
@@ -33,96 +74,15 @@ export function useTaskCardState(task: TaskRecord) {
   }, [task.status])
 
   useEffect(() => {
-    let cancelled = false
-    setCoverRatio('')
-    setCoverSize('')
-    setThumbSrc('')
-
-    if (!coverImageId) return () => {
-      cancelled = true
-    }
-
-    const cached = getCachedImage(coverImageId, 'thumbnail')
-    if (cached) {
-      setThumbSrc(cached)
-      return () => {
-        cancelled = true
-      }
-    }
-
-    void ensureImageCached(coverImageId, 'thumbnail').then((url) => {
-      if (!cancelled && url) {
-        setThumbSrc(url)
-      }
-    })
-
-    return () => {
-      cancelled = true
-    }
-  }, [coverImageId])
-
-  useEffect(() => {
-    if (!thumbSrc || !coverImageId) return
-
-    const applyCoverMeta = (width: number, height: number) => {
-      const nextMeta = {
-        ratio: formatImageRatio(width, height),
-        size: `${width}×${height}`,
-      }
-      imageMetaCache.set(coverImageId, nextMeta)
-      setCoverRatio(nextMeta.ratio)
-      setCoverSize(nextMeta.size)
-    }
-
-    const cachedMeta = imageMetaCache.get(coverImageId)
-    if (cachedMeta) {
-      setCoverRatio(cachedMeta.ratio)
-      setCoverSize(cachedMeta.size)
+    if (!displaySrc || !coverImageId || !coverMetadata) {
+      setCoverRatio('')
+      setCoverSize('')
       return
     }
 
-    const persistedMeta = getCachedImageMetadata(coverImageId)
-    if (persistedMeta) {
-      applyCoverMeta(persistedMeta.width, persistedMeta.height)
-      return
-    }
-
-    let cancelled = false
-    const loadMetaFromImage = () => {
-      const image = new Image()
-      image.onload = () => {
-        if (!cancelled && image.naturalWidth > 0 && image.naturalHeight > 0) {
-          applyCoverMeta(image.naturalWidth, image.naturalHeight)
-        }
-      }
-      image.src = thumbSrc
-
-      if (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0) {
-        applyCoverMeta(image.naturalWidth, image.naturalHeight)
-      }
-    }
-
-    void ensureCachedImageMetadata(coverImageId)
-      .then((metadata) => {
-        if (!cancelled && metadata) {
-          applyCoverMeta(metadata.width, metadata.height)
-          return
-        }
-
-        if (!cancelled) {
-          loadMetaFromImage()
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          loadMetaFromImage()
-        }
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [coverImageId, thumbSrc])
+    setCoverRatio(formatImageRatio(coverMetadata.width, coverMetadata.height))
+    setCoverSize(`${coverMetadata.width}×${coverMetadata.height}`)
+  }, [coverImageId, coverMetadata, displaySrc])
 
   useEffect(() => {
     if (!touchActionsVisible) return
@@ -201,10 +161,12 @@ export function useTaskCardState(task: TaskRecord) {
 
   return {
     cardRef,
-    thumbSrc,
+    thumbSrc: displaySrc,
+    coverMetadata,
     coverRatio,
     coverSize,
     duration,
+    isPreferredImageReady: preferredImageVariant === 'original' ? Boolean(preferredSrc) : true,
     touchActionsVisible,
     closeTouchActions,
     consumeCardClick,

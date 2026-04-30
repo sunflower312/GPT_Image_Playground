@@ -22,5 +22,4 @@ export interface TaskCardProps {
   onContextMenu: (event: ReactMouseEvent<HTMLDivElement>) => void
 }
 
-export const imageMetaCache = new Map<string, { ratio: string; size: string }>()
 export const TOUCH_ACTION_REVEAL_DELAY = 360

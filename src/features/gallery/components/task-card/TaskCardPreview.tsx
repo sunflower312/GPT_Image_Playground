@@ -6,6 +6,7 @@ import TaskCardPreviewStatusLayer from './TaskCardPreviewStatusLayer'
 interface TaskCardPreviewProps {
   task: TaskRecord
   thumbSrc: string
+  imageFit?: 'cover' | 'contain'
   coverRatio: string
   coverSize: string
   duration: string
@@ -24,6 +25,7 @@ interface TaskCardPreviewProps {
 export default function TaskCardPreview({
   task,
   thumbSrc,
+  imageFit = 'cover',
   coverRatio,
   coverSize,
   duration,
@@ -57,6 +59,7 @@ export default function TaskCardPreview({
       <TaskCardPreviewStatusLayer
         task={task}
         thumbSrc={thumbSrc}
+        imageFit={imageFit}
         progressCountLabel={progressCountLabel}
         statusLabel={statusLabel}
         onAbort={onAbort}

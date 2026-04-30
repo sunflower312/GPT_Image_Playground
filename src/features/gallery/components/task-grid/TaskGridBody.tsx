@@ -1,21 +1,19 @@
 import type { MouseEvent as ReactMouseEvent, RefObject } from 'react'
+import { resolveTaskCategoryName, resolveTaskProviderName } from '../../../../store'
 import {
   ALL_CATEGORY_FILTER,
   type CategoryConfig,
   type ProviderConfig,
   type TaskRecord,
   type TaskView,
-  resolveTaskCategoryName,
-  resolveTaskProviderName,
 } from '../../../../types'
-import TaskCard from '../TaskCard'
+import TaskCard from '../task-card/TaskCard'
+import { useVirtualTaskGrid } from './useVirtualTaskGrid'
 
 interface TaskGridBodyProps {
   filteredTaskCount: number
-  renderedTasks: TaskRecord[]
-  renderedTaskRangeLabel: string
-  topSpacerHeight: number
-  bottomSpacerHeight: number
+  tasks: TaskRecord[]
+  selectedCount: number
   categories: CategoryConfig[]
   providers: ProviderConfig[]
   selectedIdSet: Set<string>
@@ -23,6 +21,7 @@ interface TaskGridBodyProps {
   activeCategoryLabel: string
   searchQuery: string
   taskView: TaskView
+  wrapperRef: RefObject<HTMLDivElement | null>
   gridRef: RefObject<HTMLDivElement | null>
   onGridMouseDownCapture: (event: ReactMouseEvent<HTMLDivElement>) => void
   onTaskOpen: (taskId: string) => void
@@ -41,10 +40,8 @@ interface TaskGridBodyProps {
 
 export default function TaskGridBody({
   filteredTaskCount,
-  renderedTasks,
-  renderedTaskRangeLabel,
-  topSpacerHeight,
-  bottomSpacerHeight,
+  tasks,
+  selectedCount,
   categories,
   providers,
   selectedIdSet,
@@ -52,6 +49,7 @@ export default function TaskGridBody({
   activeCategoryLabel,
   searchQuery,
   taskView,
+  wrapperRef,
   gridRef,
   onGridMouseDownCapture,
   onTaskOpen,
@@ -67,6 +65,13 @@ export default function TaskGridBody({
   onTaskRestore,
   onTaskContextMenu,
 }: TaskGridBodyProps) {
+  const virtualGrid = useVirtualTaskGrid({
+    wrapperRef,
+    gridRef,
+    tasks,
+    layoutVersion: selectedCount,
+  })
+
   if (!filteredTaskCount) {
     return (
       <div className="py-20 text-center text-gray-400 dark:text-gray-500">
@@ -91,7 +96,7 @@ export default function TaskGridBody({
                 d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
               />
             </svg>
-            <p className="text-sm">输入提示词开始生成图片</p>
+            <p className="text-sm">输入提示词生成图片，或直接拖图、粘图到这里</p>
           </>
         )}
       </div>
@@ -101,7 +106,13 @@ export default function TaskGridBody({
   return (
     <>
       <div className="flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
-        <span>当前渲染 {renderedTaskRangeLabel} / {filteredTaskCount} 条</span>
+        <span>
+          当前渲染{' '}
+          {virtualGrid.renderedTasks.length > 0
+            ? `${virtualGrid.startIndex + 1}-${virtualGrid.endIndex}`
+            : '0'}{' '}
+          / {filteredTaskCount} 条
+        </span>
       </div>
 
       <div
@@ -109,11 +120,15 @@ export default function TaskGridBody({
         onMouseDownCapture={onGridMouseDownCapture}
         className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
       >
-        {topSpacerHeight > 0 && (
-          <div aria-hidden className="col-span-full" style={{ height: `${topSpacerHeight}px` }} />
+        {virtualGrid.topSpacerHeight > 0 && (
+          <div
+            aria-hidden
+            className="col-span-full"
+            style={{ height: `${virtualGrid.topSpacerHeight}px` }}
+          />
         )}
 
-        {renderedTasks.map((task) => (
+        {virtualGrid.renderedTasks.map((task) => (
           <TaskCard
             key={task.id}
             task={task}
@@ -136,8 +151,12 @@ export default function TaskGridBody({
             onContextMenu={(event) => onTaskContextMenu(task, event)}
           />
         ))}
-        {bottomSpacerHeight > 0 && (
-          <div aria-hidden className="col-span-full" style={{ height: `${bottomSpacerHeight}px` }} />
+        {virtualGrid.bottomSpacerHeight > 0 && (
+          <div
+            aria-hidden
+            className="col-span-full"
+            style={{ height: `${virtualGrid.bottomSpacerHeight}px` }}
+          />
         )}
       </div>
     </>

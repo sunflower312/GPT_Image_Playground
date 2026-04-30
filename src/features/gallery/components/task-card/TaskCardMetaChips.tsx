@@ -1,6 +1,9 @@
+import type { TaskKind } from '../../../../types'
+
 interface TaskCardMetaChipsProps {
   isInRecycleBin: boolean
   isFavorite: boolean
+  taskKind: TaskKind
   categoryName: string
   providerName: string
   statusLabel: string
@@ -19,6 +22,7 @@ interface TaskCardMetaChipsProps {
 export default function TaskCardMetaChips({
   isInRecycleBin,
   isFavorite,
+  taskKind,
   categoryName,
   providerName,
   statusLabel,
@@ -65,38 +69,48 @@ export default function TaskCardMetaChips({
         {statusLabel}
       </span>
 
+      {taskKind === 'image' && (
+        <span className="flex-shrink-0 rounded-full bg-violet-50 px-2 py-1 text-[11px] font-medium text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
+          单图任务
+        </span>
+      )}
+
       {progressCountLabel && (
         <span className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-1 text-[11px] font-medium text-gray-500 dark:bg-white/[0.04] dark:text-gray-400">
           {progressCountLabel}
         </span>
       )}
 
-      {transportLabel && (
+      {taskKind !== 'image' && transportLabel && (
         <span className={`flex-shrink-0 rounded-full px-2 py-1 text-[11px] font-medium ${transportChipClass}`}>
           {transportLabel}
         </span>
       )}
 
-      <span
-        className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-1 text-[11px] font-medium text-gray-500 dark:bg-white/[0.04] dark:text-gray-400"
-        title={qualityTitle}
-      >
-        {displayQuality}
-      </span>
+      {taskKind !== 'image' && (
+        <>
+          <span
+            className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-1 text-[11px] font-medium text-gray-500 dark:bg-white/[0.04] dark:text-gray-400"
+            title={qualityTitle}
+          >
+            {displayQuality}
+          </span>
 
-      <span
-        className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-1 text-[11px] font-medium text-gray-500 dark:bg-white/[0.04] dark:text-gray-400"
-        title={sizeTitle}
-      >
-        {sizeChipValue}
-      </span>
+          <span
+            className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-1 text-[11px] font-medium text-gray-500 dark:bg-white/[0.04] dark:text-gray-400"
+            title={sizeTitle}
+          >
+            {sizeChipValue}
+          </span>
 
-      <span
-        className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-1 text-[11px] font-medium text-gray-500 dark:bg-white/[0.04] dark:text-gray-400"
-        title={outputFormatTitle}
-      >
-        {displayOutputFormat}
-      </span>
+          <span
+            className="flex-shrink-0 rounded-full bg-gray-100 px-2 py-1 text-[11px] font-medium text-gray-500 dark:bg-white/[0.04] dark:text-gray-400"
+            title={outputFormatTitle}
+          >
+            {displayOutputFormat}
+          </span>
+        </>
+      )}
     </div>
   )
 }

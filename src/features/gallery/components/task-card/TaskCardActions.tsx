@@ -1,8 +1,9 @@
 import type { TaskRecord } from '../../../../types'
+import { canRetryTask } from '../../../../store'
 
 interface TaskCardActionsProps {
   isInRecycleBin: boolean
-  taskStatus: TaskRecord['status']
+  task: TaskRecord
   canEditOutputs: boolean
   onReuse: () => void
   onEditOutputs: () => void
@@ -15,7 +16,7 @@ interface TaskCardActionsProps {
 
 export default function TaskCardActions({
   isInRecycleBin,
-  taskStatus,
+  task,
   canEditOutputs,
   onReuse,
   onEditOutputs,
@@ -25,7 +26,7 @@ export default function TaskCardActions({
   onPurge,
   onRestore,
 }: TaskCardActionsProps) {
-  const canRetry = taskStatus === 'error' || taskStatus === 'partial_error'
+  const canRetry = canRetryTask(task)
   const showEditButton = canEditOutputs
 
   return (

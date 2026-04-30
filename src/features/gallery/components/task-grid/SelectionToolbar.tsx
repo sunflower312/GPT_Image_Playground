@@ -40,9 +40,9 @@ export default function SelectionToolbar({
   onBatchDelete,
 }: SelectionToolbarProps) {
   return (
-    <div className="flex flex-col gap-2.5 rounded-2xl border border-gray-200/80 bg-white/[0.88] px-3.5 py-3 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.55)] backdrop-blur-sm dark:border-white/[0.08] dark:bg-gray-900/[0.72] sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-2 rounded-[1.35rem] border border-gray-200/80 bg-white/[0.94] px-3 py-2.5 shadow-[0_24px_44px_-30px_rgba(15,23,42,0.48)] backdrop-blur-md dark:border-white/[0.08] dark:bg-gray-900/[0.84] sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
-        <p className="text-[13px] font-semibold text-gray-700 dark:text-gray-100">
+        <p className="text-[12px] font-semibold text-gray-700 dark:text-gray-100">
           已选 {selectedCount} 项
         </p>
         {selectedCount > visibleSelectedCount && (
@@ -59,7 +59,7 @@ export default function SelectionToolbar({
               type="button"
               onClick={onBatchFavorite}
               disabled={!selectedCount}
-              className="rounded-full border border-amber-200/80 bg-amber-50 px-3 py-2 text-[13px] font-medium text-amber-600 transition-all duration-200 hover:-translate-y-px hover:bg-amber-100/80 disabled:cursor-not-allowed disabled:opacity-40 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20"
+              className="h-8 rounded-full border border-amber-200/80 bg-amber-50 px-3 text-[12px] font-medium text-amber-600 transition-all duration-200 hover:-translate-y-px hover:bg-amber-100/80 disabled:cursor-not-allowed disabled:opacity-40 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20"
             >
               {allSelectedFavorited ? '取消收藏' : '加入收藏'}
             </button>
@@ -69,7 +69,7 @@ export default function SelectionToolbar({
                 value={batchCategoryTarget}
                 onChange={(value) => onBatchCategoryTargetChange(String(value))}
                 options={categoryOptions}
-                className="rounded-full border border-gray-200 bg-white px-3 py-2 text-[13px] font-medium text-gray-600 transition-all duration-200 hover:bg-gray-50 dark:border-white/[0.08] dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-white/[0.04]"
+                className="h-8 rounded-full border border-gray-200 bg-white px-3 text-[12px] font-medium text-gray-600 transition-all duration-200 hover:bg-gray-50 dark:border-white/[0.08] dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-white/[0.04]"
               />
             </div>
 
@@ -77,7 +77,7 @@ export default function SelectionToolbar({
               type="button"
               onClick={onBatchMoveCategory}
               disabled={!selectedCount}
-              className="rounded-full border border-emerald-200/80 bg-emerald-50 px-3 py-2 text-[13px] font-medium text-emerald-600 transition-all duration-200 hover:-translate-y-px hover:bg-emerald-100/80 disabled:cursor-not-allowed disabled:opacity-40 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20"
+              className="h-8 rounded-full border border-emerald-200/80 bg-emerald-50 px-3 text-[12px] font-medium text-emerald-600 transition-all duration-200 hover:-translate-y-px hover:bg-emerald-100/80 disabled:cursor-not-allowed disabled:opacity-40 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20"
             >
               移动分类
             </button>
@@ -88,7 +88,7 @@ export default function SelectionToolbar({
           type="button"
           onClick={onToggleAllVisible}
           disabled={!hasVisibleTasks}
-          className="rounded-full border border-gray-200 bg-white px-3 py-2 text-[13px] font-medium text-gray-600 transition-all duration-200 hover:-translate-y-px hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/[0.08] dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-white/[0.04]"
+          className="h-8 rounded-full border border-gray-200 bg-white px-3 text-[12px] font-medium text-gray-600 transition-all duration-200 hover:-translate-y-px hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/[0.08] dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-white/[0.04]"
         >
           {allVisibleSelected ? '取消全选当前结果' : '全选当前结果'}
         </button>
@@ -97,7 +97,7 @@ export default function SelectionToolbar({
           type="button"
           onClick={onClearSelected}
           disabled={!selectedCount}
-          className="rounded-full border border-gray-200 bg-white px-3 py-2 text-[13px] font-medium text-gray-600 transition-all duration-200 hover:-translate-y-px hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/[0.08] dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-white/[0.04]"
+          className="h-8 rounded-full border border-gray-200 bg-white px-3 text-[12px] font-medium text-gray-600 transition-all duration-200 hover:-translate-y-px hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/[0.08] dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-white/[0.04]"
         >
           清空选择
         </button>
@@ -108,7 +108,7 @@ export default function SelectionToolbar({
               type="button"
               onClick={onBatchRestore}
               disabled={!selectedCount}
-              className="rounded-full bg-blue-500 px-3 py-2 text-[13px] font-medium text-white transition-all duration-200 hover:-translate-y-px hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-40"
+              className="h-8 rounded-full bg-blue-500 px-3 text-[12px] font-medium text-white transition-all duration-200 hover:-translate-y-px hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-40"
             >
               批量恢复
             </button>
@@ -117,7 +117,7 @@ export default function SelectionToolbar({
               type="button"
               onClick={onBatchPurge}
               disabled={!selectedCount}
-              className="rounded-full bg-red-500 px-3 py-2 text-[13px] font-medium text-white transition-all duration-200 hover:-translate-y-px hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+              className="h-8 rounded-full bg-red-500 px-3 text-[12px] font-medium text-white transition-all duration-200 hover:-translate-y-px hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-40"
             >
               批量彻底删除
             </button>
@@ -127,7 +127,7 @@ export default function SelectionToolbar({
             type="button"
             onClick={onBatchDelete}
             disabled={!selectedCount}
-            className="rounded-full bg-red-500 px-3 py-2 text-[13px] font-medium text-white transition-all duration-200 hover:-translate-y-px hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+            className="h-8 rounded-full bg-red-500 px-3 text-[12px] font-medium text-white transition-all duration-200 hover:-translate-y-px hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-40"
           >
             批量移入回收站
           </button>

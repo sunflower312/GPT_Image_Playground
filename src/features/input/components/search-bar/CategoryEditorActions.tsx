@@ -7,6 +7,7 @@ interface CategoryEditorActionsProps {
   categoryInput: string
   activeCategory: CategoryConfig | null
   onStartCreate: () => void
+  onOpenUploadImagePicker: () => void
   onStartRename: () => void
   onDeleteCategory: () => void
   onCategoryInputChange: (value: string) => void
@@ -20,6 +21,7 @@ export default function CategoryEditorActions({
   categoryInput,
   activeCategory,
   onStartCreate,
+  onOpenUploadImagePicker,
   onStartRename,
   onDeleteCategory,
   onCategoryInputChange,
@@ -30,7 +32,7 @@ export default function CategoryEditorActions({
     <div className="mt-3 flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
       <div className="text-xs text-gray-400 dark:text-gray-500">
         当前新项目默认归入：
-        <span className="ml-1.5 rounded-full bg-blue-50 px-2 py-0.5 text-[13px] font-medium text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+        <span className="ml-1.5 rounded-full bg-blue-50 px-2 py-0.5 text-[12px] font-medium text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
           {generationTargetLabel}
         </span>
       </div>
@@ -47,6 +49,22 @@ export default function CategoryEditorActions({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               新建分类
+            </button>
+
+            <button
+              type="button"
+              onClick={onOpenUploadImagePicker}
+              className={`${ACTION_BUTTON_CLASS} border-gray-200 bg-white text-gray-600 hover:-translate-y-px hover:bg-gray-50 dark:border-white/[0.08] dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-white/[0.06]`}
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M8 8l4-4m0 0 4 4m-4-4v12"
+                />
+              </svg>
+              上传图片
             </button>
 
             {activeCategory && (
@@ -93,13 +111,13 @@ export default function CategoryEditorActions({
               }}
               type="text"
               placeholder={editorMode === 'create' ? '输入分类名称' : '输入新的分类名称'}
-              className="min-w-[12rem] rounded-full border border-gray-200 bg-white px-3.5 py-2 text-[13px] text-gray-700 transition focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-white/[0.08] dark:bg-gray-900 dark:text-gray-200"
+              className="h-8 min-w-[12rem] rounded-full border border-gray-200 bg-white px-3.5 text-[12px] text-gray-700 transition focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-white/[0.08] dark:bg-gray-900 dark:text-gray-200"
             />
 
             <button
               type="button"
               onClick={onSubmitCategory}
-              className="inline-flex items-center rounded-full bg-blue-500 px-3.5 py-2 text-[13px] font-medium text-white transition hover:bg-blue-600"
+              className="inline-flex h-8 items-center rounded-full bg-blue-500 px-3.5 text-[12px] font-medium text-white transition hover:bg-blue-600"
             >
               保存
             </button>

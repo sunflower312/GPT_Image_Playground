@@ -19,18 +19,18 @@ export default function SearchFilters({
 }: SearchFiltersProps) {
   return (
     <div className="flex flex-col gap-2 sm:flex-row">
-      <div className="relative z-20 w-full flex-shrink-0 sm:w-36">
+      <div className="relative z-20 w-full flex-shrink-0 sm:w-32">
         <Select
           value={filterStatus}
           onChange={(value) => onFilterStatusChange(value as SearchFilterStatus)}
           options={FILTER_STATUS_OPTIONS}
-          className="rounded-xl border border-gray-200/90 bg-white px-3.5 py-2.5 text-[13px] text-gray-700 shadow-sm transition hover:bg-gray-50 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-white/[0.08] dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-white/[0.06]"
+          className="h-9 rounded-xl border border-gray-200/90 bg-white px-3 text-[12px] text-gray-700 shadow-sm transition hover:bg-gray-50 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-white/[0.08] dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-white/[0.06]"
         />
       </div>
 
       <div className="relative z-10 flex-1">
         <svg
-          className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500"
+          className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400 dark:text-gray-500"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -52,14 +52,14 @@ export default function SearchFilters({
               ? '搜索回收站里的提示词、参数、供应商、分类...'
               : '搜索提示词、参数、供应商、分类...'
           }
-          className="w-full rounded-xl border border-gray-200/90 bg-white py-2.5 pl-10 pr-10 text-[13px] text-gray-700 shadow-sm transition focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-white/[0.08] dark:bg-gray-900 dark:text-gray-200"
+          className="h-9 w-full rounded-xl border border-gray-200/90 bg-white pl-9 pr-9 text-[12px] text-gray-700 shadow-sm transition focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 dark:border-white/[0.08] dark:bg-gray-900 dark:text-gray-200"
         />
 
         {searchQuery && (
           <button
             type="button"
             onClick={() => onSearchQueryChange('')}
-            className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-white/[0.06] dark:hover:text-gray-200"
+            className="absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-white/[0.06] dark:hover:text-gray-200"
             title="清空搜索"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

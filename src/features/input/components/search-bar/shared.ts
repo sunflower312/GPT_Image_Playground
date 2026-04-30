@@ -12,10 +12,10 @@ export const CATEGORY_LOOP_MIN_SCROLL_RATIO = 0.5
 export const CATEGORY_LOOP_MAX_SCROLL_RATIO = 1.5
 
 export const SEGMENTED_BUTTON_CLASS =
-  'inline-flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3 py-2 text-[13px] font-medium transition-all duration-200'
+  'inline-flex h-8 flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2.5 text-[11px] font-medium transition-all duration-200'
 
 export const ACTION_BUTTON_CLASS =
-  'inline-flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-2 text-[13px] font-medium transition-all duration-200'
+  'inline-flex h-8 flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2.5 text-[11px] font-medium transition-all duration-200'
 
 export const FILTER_STATUS_OPTIONS: Array<{ label: string; value: SearchFilterStatus }> = [
   { label: '全部状态', value: 'all' },

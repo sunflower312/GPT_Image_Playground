@@ -1,5 +1,10 @@
 import { useMemo } from 'react'
 import {
+  isTaskInRecycleBin,
+  resolveTaskCategoryName,
+  resolveTaskProviderName,
+} from '../../../../store'
+import {
   ALL_CATEGORY_FILTER,
   FAVORITES_CATEGORY_FILTER,
   UNCATEGORIZED_CATEGORY_FILTER,
@@ -7,10 +12,7 @@ import {
   type ProviderConfig,
   type TaskRecord,
   type TaskStatus,
-  isTaskInRecycleBin,
   resolveCategoryFilterName,
-  resolveTaskCategoryName,
-  resolveTaskProviderName,
 } from '../../../../types'
 import type { CategoryOption } from './shared'
 

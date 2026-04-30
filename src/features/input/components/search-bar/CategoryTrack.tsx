@@ -29,7 +29,7 @@ export default function CategoryTrack({
       <button
         type="button"
         onClick={() => onSelectCategory(value)}
-        className={`inline-flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-[13px] font-medium transition-all duration-200 ${
+        className={`inline-flex h-8 flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-[12px] font-medium transition-all duration-200 ${
           isActive
             ? 'border-blue-500 bg-blue-500 text-white shadow-[0_10px_22px_-16px_rgba(37,99,235,0.8)]'
             : 'border-gray-200/90 bg-white text-gray-600 hover:-translate-y-px hover:border-gray-300 hover:bg-gray-50 dark:border-white/[0.08] dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-white/[0.06]'

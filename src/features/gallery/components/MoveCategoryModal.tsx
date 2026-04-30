@@ -1,8 +1,6 @@
 import type { CategoryConfig, TaskRecord } from '../../../types'
-import {
-  UNCATEGORIZED_CATEGORY_FILTER,
-  resolveTaskCategoryName,
-} from '../../../types'
+import { resolveTaskCategoryName } from '../../../store'
+import { UNCATEGORIZED_CATEGORY_FILTER } from '../../../types'
 import { useCloseOnEscape } from '../../../hooks/useCloseOnEscape'
 import Select from '../../../shared/components/Select'
 

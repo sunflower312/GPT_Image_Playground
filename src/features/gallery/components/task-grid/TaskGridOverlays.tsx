@@ -1,4 +1,9 @@
-import { editOutputs, retryTask, reuseConfig, toggleTaskFavorite } from '../../../../store'
+import {
+  runGalleryEditOutputs,
+  runGalleryRetry,
+  runGalleryReuse,
+  runGalleryToggleFavorite,
+} from '../../../../store'
 import type { CategoryConfig, TaskRecord, TaskView } from '../../../../types'
 import MoveCategoryModal from '../MoveCategoryModal'
 import TaskContextMenu from '../TaskContextMenu'
@@ -12,6 +17,7 @@ interface TaskGridOverlaysProps {
   selectionBox: SelectionBox | null
   contextMenuState: TaskContextMenuState | null
   taskView: TaskView
+  galleryImageTaskImporting: boolean
   onMoveCategoryTargetChange: (value: string) => void
   onCloseMoveCategory: () => void
   onConfirmMoveCategory: () => void
@@ -31,6 +37,7 @@ export default function TaskGridOverlays(props: TaskGridOverlaysProps) {
     selectionBox,
     contextMenuState,
     taskView,
+    galleryImageTaskImporting,
     onMoveCategoryTargetChange,
     onCloseMoveCategory,
     onConfirmMoveCategory,
@@ -55,6 +62,17 @@ export default function TaskGridOverlays(props: TaskGridOverlaysProps) {
 
       <SelectionBoxOverlay selectionBox={selectionBox} />
 
+      {galleryImageTaskImporting && (
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-3xl border-2 border-dashed border-blue-300/80 bg-blue-50/70 backdrop-blur-sm dark:border-blue-400/40 dark:bg-blue-500/10">
+          <div className="rounded-3xl border border-white/60 bg-white/90 px-6 py-5 text-center shadow-lg dark:border-white/[0.08] dark:bg-gray-900/90">
+            <p className="text-base font-semibold text-gray-800 dark:text-gray-100">松手即可加入画廊</p>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              支持 PNG、JPG、JPEG、WebP
+            </p>
+          </div>
+        </div>
+      )}
+
       <TaskContextMenu
         task={contextMenuState?.task ?? null}
         x={contextMenuState?.x ?? 0}
@@ -68,22 +86,22 @@ export default function TaskGridOverlays(props: TaskGridOverlaysProps) {
         }}
         onReuse={() => {
           if (contextMenuState?.task) {
-            void reuseConfig(contextMenuState.task)
+            runGalleryReuse(contextMenuState.task)
           }
         }}
         onEdit={() => {
           if (contextMenuState?.task) {
-            void editOutputs(contextMenuState.task)
+            runGalleryEditOutputs(contextMenuState.task)
           }
         }}
         onRetry={() => {
           if (contextMenuState?.task) {
-            void retryTask(contextMenuState.task)
+            runGalleryRetry(contextMenuState.task)
           }
         }}
         onToggleFavorite={() => {
           if (contextMenuState?.task) {
-            void toggleTaskFavorite(contextMenuState.task)
+            runGalleryToggleFavorite(contextMenuState.task)
           }
         }}
         onMoveCategory={() => {

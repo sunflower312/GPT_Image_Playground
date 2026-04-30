@@ -4,10 +4,12 @@ import {
   resolveTaskAppliedImageParam,
   resolveTaskDisplayImageParam,
   resolveTaskImageProgress,
-  resolveTaskStatusLabel,
+  resolveTaskKind,
   resolveTaskTransportLabel,
   resolveTaskTransportMeta,
-} from '../../../../types'
+  resolveTaskRunOutcome,
+  resolveTaskStatusLabel,
+} from '../../../../store'
 import TaskCardActions from './TaskCardActions'
 import TaskCardMetaChips from './TaskCardMetaChips'
 import TaskCardPreview from './TaskCardPreview'
@@ -39,6 +41,8 @@ function TaskCard({
   const transportLabel = resolveTaskTransportLabel(task)
   const transportMeta = resolveTaskTransportMeta(task)
   const canEditOutputs = canEditTaskOutputs(task)
+  const taskKind = resolveTaskKind(task)
+  const runOutcome = resolveTaskRunOutcome(task)
   const {
     cardRef,
     thumbSrc,
@@ -80,14 +84,15 @@ function TaskCard({
     appliedOutputFormat && appliedOutputFormat !== task.params.output_format
       ? `请求: ${task.params.output_format} / 实际: ${displayOutputFormat}`
       : undefined
+  const normalizedPrompt = task.prompt.trim()
 
   const statusChipClass =
-    task.status === 'done'
+    runOutcome === 'done'
       ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300'
-      : task.status === 'partial_error'
+      : runOutcome === 'partial_error'
         ? 'bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300'
-      : task.status === 'error'
-        ? task.isAborted
+      : runOutcome === 'error' || runOutcome === 'aborted'
+        ? runOutcome === 'aborted'
           ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300'
           : 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-300'
         : 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300'
@@ -124,6 +129,7 @@ function TaskCard({
         <TaskCardPreview
           task={task}
           thumbSrc={thumbSrc}
+          imageFit="cover"
           coverRatio={coverRatio}
           coverSize={coverSize}
           duration={duration}
@@ -142,7 +148,7 @@ function TaskCard({
         <div className="flex min-w-0 flex-1 flex-col p-3.5">
           <div className="mb-2 min-h-0 flex-1">
             <p className="line-clamp-3 text-[14px] font-medium leading-6 text-gray-700 dark:text-gray-200">
-              {task.prompt || '(无提示词)'}
+              {normalizedPrompt || (taskKind === 'image' ? '' : '(无提示词)')}
             </p>
           </div>
 
@@ -150,6 +156,7 @@ function TaskCard({
             <TaskCardMetaChips
               isInRecycleBin={isInRecycleBin}
               isFavorite={isFavorite}
+              taskKind={taskKind}
               categoryName={categoryName}
               providerName={providerName}
               statusLabel={statusLabel}
@@ -167,7 +174,7 @@ function TaskCard({
 
             <TaskCardActions
               isInRecycleBin={isInRecycleBin}
-              taskStatus={task.status}
+              task={task}
               canEditOutputs={canEditOutputs}
               onReuse={onReuse}
               onEditOutputs={onEditOutputs}
