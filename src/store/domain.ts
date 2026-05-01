@@ -39,6 +39,10 @@ function normalizeApiProtocol(value: unknown): ApiProtocol {
 }
 
 function normalizeRequestMode(value: unknown): AppSettings['requestMode'] {
+  if (!import.meta.env.DEV) {
+    return 'direct'
+  }
+
   return value === 'direct' ? 'direct' : 'local_proxy'
 }
 

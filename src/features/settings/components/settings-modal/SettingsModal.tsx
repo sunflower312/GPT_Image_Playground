@@ -6,6 +6,17 @@ import { useCloseOnEscape } from '../../../../hooks/useCloseOnEscape'
 import ApiSettingsSection from './ApiSettingsSection'
 import DataManagementSection from './DataManagementSection'
 
+function normalizeRuntimeRequestMode(requestMode: AppSettings['requestMode']): AppSettings['requestMode'] {
+  return import.meta.env.DEV && requestMode === 'local_proxy' ? 'local_proxy' : 'direct'
+}
+
+function normalizeSettingsDraft(settings: AppSettings): AppSettings {
+  return {
+    ...settings,
+    requestMode: normalizeRuntimeRequestMode(settings.requestMode),
+  }
+}
+
 export default function SettingsModal() {
   const showSettings = useStore((s) => s.showSettings)
   const setShowSettings = useStore((s) => s.setShowSettings)
@@ -20,7 +31,7 @@ export default function SettingsModal() {
   const setConfirmDialog = useStore((s) => s.setConfirmDialog)
 
   const importInputRef = useRef<HTMLInputElement>(null)
-  const [draft, setDraft] = useState<AppSettings>(settings)
+  const [draft, setDraft] = useState<AppSettings>(() => normalizeSettingsDraft(settings))
   const [timeoutInput, setTimeoutInput] = useState(String(settings.timeout))
   const [showApiKey, setShowApiKey] = useState(false)
   const [providerNameInput, setProviderNameInput] = useState('')
@@ -30,7 +41,7 @@ export default function SettingsModal() {
 
   useEffect(() => {
     if (!showSettings) return
-    setDraft(settings)
+    setDraft(normalizeSettingsDraft(settings))
     setTimeoutInput(String(settings.timeout))
     setProviderNameInput(activeProvider?.name ?? '')
   }, [activeProvider, settings, showSettings])
@@ -51,7 +62,7 @@ export default function SettingsModal() {
           nextDraft.responsesPromptRevisionMode || DEFAULT_SETTINGS.responsesPromptRevisionMode,
         timeout: Number(nextDraft.timeout) || DEFAULT_SETTINGS.timeout,
         apiProtocol: nextDraft.apiProtocol || DEFAULT_SETTINGS.apiProtocol,
-        requestMode: nextDraft.requestMode || DEFAULT_SETTINGS.requestMode,
+        requestMode: normalizeRuntimeRequestMode(nextDraft.requestMode || DEFAULT_SETTINGS.requestMode),
       }
       setDraft(normalizedDraft)
       setSettings(normalizedDraft)

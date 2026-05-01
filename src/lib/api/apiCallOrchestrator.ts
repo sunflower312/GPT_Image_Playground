@@ -30,8 +30,15 @@ function resolveEditSourceImageIndex(intent: CallImageApiIntent): number | undef
 }
 
 function buildCallApiOptions(intent: CallImageApiIntent): CallApiOptions {
+  const settings = import.meta.env.DEV
+    ? intent.settings
+    : {
+        ...intent.settings,
+        requestMode: 'direct' as const,
+      }
+
   return {
-    settings: intent.settings,
+    settings,
     prompt: intent.prompt,
     params: intent.params,
     inputImageDataUrls: intent.inputImages.map((image) => image.dataUrl),
@@ -47,12 +54,10 @@ function createApiCallRuntime(intent: CallImageApiIntent): ApiCallRuntime {
   const baseOpts = buildCallApiOptions(intent)
   const mime = MIME_MAP[baseOpts.params.output_format] || 'image/png'
   const proxyConfig = readClientDevProxyConfig()
-  const forceProxy = baseOpts.settings.requestMode === 'local_proxy'
+  const forceProxy = import.meta.env.DEV && baseOpts.settings.requestMode === 'local_proxy'
   const debugLog: ApiDebugRequestLogEntry[] = []
   const requestHeaders: Record<string, string> = {
     Authorization: `Bearer ${baseOpts.settings.apiKey}`,
-    'Cache-Control': 'no-store, no-cache, max-age=0',
-    Pragma: 'no-cache',
   }
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort('timeout'), baseOpts.settings.timeout * 1000)

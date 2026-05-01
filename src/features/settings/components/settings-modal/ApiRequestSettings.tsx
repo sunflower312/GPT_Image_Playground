@@ -15,6 +15,8 @@ export default function ApiRequestSettings({
   proxyConfig,
   commitSettings,
 }: ApiRequestSettingsProps) {
+  const requestMode = import.meta.env.DEV ? draft.requestMode : 'direct'
+
   return (
     <>
       <label className="block">
@@ -34,15 +36,17 @@ export default function ApiRequestSettings({
       <label className="block">
         <span className="mb-1 block text-xs text-gray-500 dark:text-gray-400">请求模式</span>
         <Select
-          value={draft.requestMode}
+          value={requestMode}
           onChange={(value) => commitSettings({ ...draft, requestMode: value as RequestMode })}
           options={REQUEST_MODE_OPTIONS}
           className={fieldClassName}
         />
         <div className="mt-1 text-[10px] text-gray-400 dark:text-gray-500">
           <div>直连：浏览器直接请求 API URL。</div>
-          <div>本地代理：先请求同源代理，再由本地 dev server 转发到 API URL，可绕过浏览器 CORS 预检。</div>
-          {draft.requestMode === 'local_proxy' ? (
+          {import.meta.env.DEV ? (
+            <div>本地代理：先请求同源代理，再由本地 dev server 转发到 API URL，可绕过浏览器 CORS 预检。</div>
+          ) : null}
+          {import.meta.env.DEV && requestMode === 'local_proxy' ? (
             proxyConfig?.enabled ? (
               <div>
                 已检测到本地代理前缀：

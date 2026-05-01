@@ -12,8 +12,8 @@ export const API_PROTOCOL_OPTIONS: Array<{ label: string; value: ApiProtocol }> 
 ]
 
 export const REQUEST_MODE_OPTIONS: Array<{ label: string; value: RequestMode }> = [
-  { label: '本地代理', value: 'local_proxy' },
   { label: '直连', value: 'direct' },
+  ...(import.meta.env.DEV ? [{ label: '本地代理' as const, value: 'local_proxy' as const }] : []),
 ]
 
 export const RESPONSES_TRANSPORT_OPTIONS: Array<{
