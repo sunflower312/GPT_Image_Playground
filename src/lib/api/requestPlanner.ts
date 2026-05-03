@@ -226,6 +226,19 @@ export function buildResponsesRequestPlans(
   opts: CallApiOptions,
   inputImages: ResponsesInputImage[],
 ): ResponsesRequestPlan[] {
+  const isAzureFoundry = opts.settings.providerType === 'azure-foundry'
+  if (isAzureFoundry) {
+    return [
+      {
+        id: 'azure-official-json-message-list',
+        inputPayloadMode: 'message-list',
+        transport: 'json',
+        actionMode: 'auto',
+        toolChoiceMode: 'omit',
+      },
+    ]
+  }
+
   const hasReferenceImages = inputImages.length > 0
   const hasEditMask = Boolean(opts.editMaskDataUrl)
   const defaultInputPayloadMode: ResponsesInputPayloadMode = 'message-list'

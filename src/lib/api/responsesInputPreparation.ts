@@ -86,6 +86,14 @@ function shouldRetryResponsesInputWithFileId(
   return opts.inputImageDataUrls.some((value) => isDataUrl(value)) || Boolean(opts.editMaskDataUrl)
 }
 
+function ensureAzureSupportedImageDataUrl(dataUrl: string): string {
+  if (dataUrl.startsWith('data:image/jpeg;base64,') || dataUrl.startsWith('data:image/png;base64,')) {
+    return dataUrl
+  }
+
+  throw createApiError('Azure Responses 参考图仅支持 JPEG / PNG Data URL，请关闭 WebP 转换后重试。')
+}
+
 async function uploadInputImageAsFileId(
   baseUrl: string,
   dataUrl: string,
@@ -198,6 +206,7 @@ async function prepareResponsesInputImages(
     preserveOriginalIndices?: Set<number>
   },
 ): Promise<ResponsesInputImage[]> {
+  const isAzureFoundry = ctx.settings.providerType === 'azure-foundry'
   if (!inputImageDataUrls.length) {
     return []
   }
@@ -246,8 +255,9 @@ async function prepareResponsesInputImages(
       }
     }
 
-    const optimizedDataUrl =
-      options?.preserveOriginalIndices?.has(index)
+    const optimizedDataUrl = isAzureFoundry
+      ? ensureAzureSupportedImageDataUrl(inputImage)
+      : options?.preserveOriginalIndices?.has(index)
         ? inputImage
         : await shrinkDataUrlForResponses(inputImage, inlineImageTargetBytes, ctx.controller.signal)
     inputImages.push({

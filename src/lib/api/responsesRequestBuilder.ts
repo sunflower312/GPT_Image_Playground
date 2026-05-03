@@ -53,11 +53,15 @@ export function buildResponsesRequestBody({
   plan,
 }: BuildResponsesRequestBodyOptions): Record<string, unknown> {
   const { settings, prompt, params } = opts
+  const isAzureFoundry = settings.providerType === 'azure-foundry'
   const responsesPrompt = buildResponsesPrompt(prompt, settings)
   const hasReferenceImages = inputImages.length > 0
   const tool: Record<string, unknown> = {
     type: 'image_generation',
-    model: getResponsesImageModel(settings),
+  }
+
+  if (!isAzureFoundry) {
+    tool.model = getResponsesImageModel(settings)
   }
 
   if (params.size) {
@@ -75,10 +79,10 @@ export function buildResponsesRequestBody({
   if (params.output_format !== 'png' && params.output_compression != null) {
     tool.output_compression = params.output_compression
   }
-  if (editMask) {
+  if (editMask && !isAzureFoundry) {
     tool.input_image_mask = editMask
   }
-  if (plan.actionMode === 'explicit') {
+  if (plan.actionMode === 'explicit' && !isAzureFoundry) {
     tool.action = hasReferenceImages ? 'edit' : 'generate'
   }
 
@@ -88,10 +92,10 @@ export function buildResponsesRequestBody({
     tools: [tool],
   }
 
-  if (plan.transport === 'stream') {
+  if (plan.transport === 'stream' && !isAzureFoundry) {
     body.stream = true
   }
-  if (plan.toolChoiceMode === 'force') {
+  if (plan.toolChoiceMode === 'force' && !isAzureFoundry) {
     body.tool_choice = { type: 'image_generation' }
   }
   const reasoningEffort = getResponsesReasoningEffort(settings)
