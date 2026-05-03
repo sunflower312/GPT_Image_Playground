@@ -230,8 +230,8 @@ export function buildResponsesRequestPlans(
   if (isAzureFoundry) {
     return [
       {
-        id: 'azure-official-json-message-list',
-        inputPayloadMode: 'message-list',
+        id: 'azure-official-json-compact-string',
+        inputPayloadMode: 'compact-string',
         transport: 'json',
         actionMode: 'auto',
         toolChoiceMode: 'omit',

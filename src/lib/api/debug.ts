@@ -118,12 +118,13 @@ export function createDebugRequestLogEntry(
   method: string,
   url: string,
   requestBody?: unknown,
+  requestHeaders?: Record<string, string>,
 ): ApiDebugRequestLogEntry {
   const entry: ApiDebugRequestLogEntry = {
     stage,
     method,
     url,
-    requestHeaders: summarizeRequestHeadersForDebug(ctx.requestHeaders),
+    requestHeaders: summarizeRequestHeadersForDebug(requestHeaders ?? ctx.requestHeaders),
     requestBody: requestBody === undefined ? null : sanitizeDebugValue(requestBody),
     responseStatus: null,
     responseRequestId: null,
