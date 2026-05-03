@@ -1,6 +1,8 @@
 import type { Dispatch, SetStateAction } from 'react'
 import type { AppSettings } from '../../../../types'
+import Select from '../../../../shared/components/Select'
 import { fieldClassName } from './apiSettingsShared'
+import { PROVIDER_TYPE_OPTIONS } from './options'
 
 interface ApiConnectionFieldsProps {
   draft: AppSettings
@@ -20,13 +22,23 @@ export default function ApiConnectionFields({
   return (
     <>
       <label className="block">
+        <span className="mb-1 block text-xs text-gray-500 dark:text-gray-400">供应商类型</span>
+        <Select
+          value={draft.providerType}
+          onChange={(value) => commitSettings({ ...draft, providerType: value as AppSettings['providerType'] })}
+          options={PROVIDER_TYPE_OPTIONS}
+          className={fieldClassName}
+        />
+      </label>
+
+      <label className="block">
         <span className="mb-1 block text-xs text-gray-500 dark:text-gray-400">API URL</span>
         <input
           value={draft.baseUrl}
           onChange={(event) => setDraft((prev) => ({ ...prev, baseUrl: event.target.value }))}
           onBlur={(event) => commitSettings({ ...draft, baseUrl: event.target.value })}
           type="text"
-          placeholder="https://api.openai.com/v1"
+          placeholder={draft.providerType === 'azure-foundry' ? 'https://xxx.services.ai.azure.com/openai/v1' : 'https://api.openai.com/v1'}
           className={fieldClassName}
         />
       </label>

@@ -7,10 +7,16 @@ import { DEFAULT_PARAMS } from './store/taskParams'
 // ===== 设置 =====
 
 export interface AppSettings {
+  providerType: ProviderType
   baseUrl: string
   apiKey: string
   model: string
   responsesImageModel: string
+  responsesReasoningEffort: ResponsesReasoningEffort
+  azureImageDeployment: string
+  azureTextDeployment: string
+  azureApiVersion: string
+  azureResponsesApiVersion: string
   responsesTransport: ResponsesTransportMode
   responsesImageInputMode: ResponsesImageInputMode
   responsesPromptRevisionMode: ResponsesPromptRevisionMode
@@ -19,7 +25,9 @@ export interface AppSettings {
   requestMode: RequestMode
 }
 
+export type ProviderType = 'openai-compatible' | 'azure-foundry'
 export type ApiProtocol = 'images' | 'responses'
+export type ResponsesReasoningEffort = 'none' | 'low' | 'medium' | 'high'
 export type RequestMode = 'direct' | 'local_proxy'
 export type ResponsesTransportMode = 'auto' | 'stream' | 'json'
 export type ResponsesImageInputMode = 'auto' | 'file_id'
@@ -142,10 +150,16 @@ const DEFAULT_BASE_URL = import.meta.env.VITE_DEFAULT_API_URL?.trim() || 'https:
 const DEFAULT_REQUEST_MODE: RequestMode = import.meta.env.DEV ? 'local_proxy' : 'direct'
 
 export const DEFAULT_SETTINGS: AppSettings = {
+  providerType: 'openai-compatible',
   baseUrl: DEFAULT_BASE_URL,
   apiKey: '',
   model: 'gpt-image-2',
   responsesImageModel: 'gpt-image-2',
+  responsesReasoningEffort: 'none',
+  azureImageDeployment: '',
+  azureTextDeployment: '',
+  azureApiVersion: '2025-04-01-preview',
+  azureResponsesApiVersion: 'preview',
   responsesTransport: 'auto',
   responsesImageInputMode: 'auto',
   responsesPromptRevisionMode: 'allow',

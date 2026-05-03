@@ -1,4 +1,4 @@
-import { buildResponsesPrompt, getResponsesImageModel } from './config'
+import { buildResponsesPrompt, getResponsesImageModel, getResponsesReasoningEffort } from './config'
 import type {
   CallApiOptions,
   ResponsesInputContent,
@@ -93,6 +93,10 @@ export function buildResponsesRequestBody({
   }
   if (plan.toolChoiceMode === 'force') {
     body.tool_choice = { type: 'image_generation' }
+  }
+  const reasoningEffort = getResponsesReasoningEffort(settings)
+  if (reasoningEffort !== 'none') {
+    body.reasoning = { effort: reasoningEffort }
   }
 
   return body

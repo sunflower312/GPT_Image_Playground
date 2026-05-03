@@ -307,6 +307,7 @@ export function buildResponsesRequestPlans(
  */
 export function buildImagesRequestPlans(settings: AppSettings, options?: { isEdit?: boolean }): ImagesRequestPlan[] {
   const mode = getResponsesTransportMode(settings)
+  const isAzureFoundry = settings.providerType === 'azure-foundry'
 
   if (!options?.isEdit) {
     const transports = getPreferredTransportSequence(settings)
@@ -318,6 +319,16 @@ export function buildImagesRequestPlans(settings: AppSettings, options?: { isEdi
   }
 
   if (mode === 'json') {
+    if (isAzureFoundry) {
+      return [
+        {
+          id: 'multipart-body-json',
+          transport: 'json',
+          bodyMode: 'multipart',
+        },
+      ]
+    }
+
     return [
       {
         id: 'json-body-json',
@@ -332,28 +343,16 @@ export function buildImagesRequestPlans(settings: AppSettings, options?: { isEdi
     ]
   }
 
-  return [
-    {
-      id: 'json-body-json',
-      transport: 'json',
-      bodyMode: 'json',
-    },
-    {
-      id: 'multipart-body-json',
-      transport: 'json',
-      bodyMode: 'multipart',
-    },
-    {
-      id: 'json-body-stream',
-      transport: 'stream',
-      bodyMode: 'json',
-    },
-    {
-      id: 'multipart-body-stream',
-      transport: 'stream',
-      bodyMode: 'multipart',
-    },
-  ]
+  const plans: ImagesRequestPlan[] = []
+  if (!isAzureFoundry) {
+    plans.push({ id: 'json-body-json', transport: 'json', bodyMode: 'json' })
+  }
+  plans.push({ id: 'multipart-body-json', transport: 'json', bodyMode: 'multipart' })
+  if (!isAzureFoundry) {
+    plans.push({ id: 'json-body-stream', transport: 'stream', bodyMode: 'json' })
+  }
+  plans.push({ id: 'multipart-body-stream', transport: 'stream', bodyMode: 'multipart' })
+  return plans
 }
 
 function createPlannerSession<TPlan extends { transport: ResponsesTransportKind }>(

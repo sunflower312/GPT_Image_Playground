@@ -106,6 +106,33 @@ function extractSseImageNumberField(dataText: string, fieldName: string): number
   return Number.isFinite(parsed) ? parsed : undefined
 }
 
+function buildPartialImagePayloadFromSseEvent(event: ParsedSseEvent): Record<string, unknown> | null {
+  if (!isPartialImageSseEventName(event.event)) {
+    return null
+  }
+
+  const dataJson = isRecord(event.json) ? event.json : event.dataText ? tryParseJson(event.dataText) : undefined
+  const base64 =
+    (isRecord(dataJson) && typeof dataJson.b64_json === 'string' ? dataJson.b64_json : undefined) ??
+    extractSseImageStringField(event.dataText, 'b64_json')
+
+  if (!base64) {
+    return null
+  }
+
+  const payload: Record<string, unknown> = {
+    type: event.event,
+    b64_json: base64,
+  }
+
+  const outputFormat = extractSseImageStringField(event.dataText, 'output_format')
+  if (outputFormat) {
+    payload.output_format = outputFormat
+  }
+
+  return payload
+}
+
 function parseResponsesOutputDoneImageEvent(
   event: ParsedSseEvent,
 ): ResponsesStreamImageEvent | null {
@@ -224,7 +251,19 @@ export async function readResponsesPayloadStream(
     response,
     signal,
     async (event) => {
-      if (isPartialImageSseEventName(event.event)) {
+      const partialImagePayload = buildPartialImagePayloadFromSseEvent(event)
+      if (partialImagePayload) {
+        streamedFinalImageCount += await emitNewImagesFromPayload(
+          partialImagePayload,
+          fallbackMime,
+          signal,
+          emittedImageSignatures,
+          async (images) => {
+            for (const image of images) {
+              streamedImages.push(image)
+            }
+          },
+        )
         return
       }
 
@@ -309,7 +348,7 @@ export async function readResponsesPayloadStream(
     },
     {
       deferJsonParsing: true,
-      discardPartialImageData: true,
+      discardPartialImageData: false,
     },
   )
 
@@ -394,6 +433,22 @@ export async function readImagesPayloadStream(
     response,
     signal,
     async (event) => {
+      const partialImagePayload = buildPartialImagePayloadFromSseEvent(event)
+      if (partialImagePayload) {
+        streamedFinalImageCount += await emitNewImagesFromPayload(
+          partialImagePayload,
+          fallbackMime,
+          signal,
+          emittedImageSignatures,
+          async (images) => {
+            for (const image of images) {
+              streamedImages.push(image)
+            }
+          },
+        )
+        return
+      }
+
       if (!event.json || !isRecord(event.json)) {
         return
       }

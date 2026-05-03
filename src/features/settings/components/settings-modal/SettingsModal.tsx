@@ -55,6 +55,14 @@ export default function SettingsModal() {
         model: nextDraft.model.trim() || DEFAULT_SETTINGS.model,
         responsesImageModel:
           nextDraft.responsesImageModel.trim() || DEFAULT_SETTINGS.responsesImageModel,
+        providerType: nextDraft.providerType || DEFAULT_SETTINGS.providerType,
+        responsesReasoningEffort:
+          nextDraft.responsesReasoningEffort || DEFAULT_SETTINGS.responsesReasoningEffort,
+        azureImageDeployment: nextDraft.azureImageDeployment.trim(),
+        azureTextDeployment: nextDraft.azureTextDeployment.trim(),
+        azureApiVersion: nextDraft.azureApiVersion.trim() || DEFAULT_SETTINGS.azureApiVersion,
+        azureResponsesApiVersion:
+          nextDraft.azureResponsesApiVersion.trim() || DEFAULT_SETTINGS.azureResponsesApiVersion,
         responsesTransport: nextDraft.responsesTransport || DEFAULT_SETTINGS.responsesTransport,
         responsesImageInputMode:
           nextDraft.responsesImageInputMode || DEFAULT_SETTINGS.responsesImageInputMode,

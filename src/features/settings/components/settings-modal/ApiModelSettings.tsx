@@ -44,6 +44,58 @@ export default function ApiModelSettings({
           仅 Responses API 生效，会作为 <code className="rounded bg-gray-100 px-1 py-0.5 dark:bg-white/[0.06]">tools[].model</code> 传入，通常填 <code className="rounded bg-gray-100 px-1 py-0.5 dark:bg-white/[0.06]">gpt-image-2</code>。
         </div>
       </label>
+
+      {draft.providerType === 'azure-foundry' ? (
+        <>
+          <label className="block">
+            <span className="mb-1 block text-xs text-gray-500 dark:text-gray-400">Azure 图片部署（可选）</span>
+            <input
+              value={draft.azureImageDeployment}
+              onChange={(event) => setDraft((prev) => ({ ...prev, azureImageDeployment: event.target.value }))}
+              onBlur={(event) => commitSettings({ ...draft, azureImageDeployment: event.target.value })}
+              type="text"
+              placeholder="gpt-image-2"
+              className={fieldClassName}
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-xs text-gray-500 dark:text-gray-400">Azure Responses 文本部署（可选）</span>
+            <input
+              value={draft.azureTextDeployment}
+              onChange={(event) => setDraft((prev) => ({ ...prev, azureTextDeployment: event.target.value }))}
+              onBlur={(event) => commitSettings({ ...draft, azureTextDeployment: event.target.value })}
+              type="text"
+              placeholder="gpt-5.5-mini"
+              className={fieldClassName}
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-xs text-gray-500 dark:text-gray-400">Azure 图片 API 版本</span>
+            <input
+              value={draft.azureApiVersion}
+              onChange={(event) => setDraft((prev) => ({ ...prev, azureApiVersion: event.target.value }))}
+              onBlur={(event) => commitSettings({ ...draft, azureApiVersion: event.target.value })}
+              type="text"
+              placeholder="2025-04-01-preview"
+              className={fieldClassName}
+            />
+          </label>
+
+          <label className="block">
+            <span className="mb-1 block text-xs text-gray-500 dark:text-gray-400">Azure Responses API 版本</span>
+            <input
+              value={draft.azureResponsesApiVersion}
+              onChange={(event) => setDraft((prev) => ({ ...prev, azureResponsesApiVersion: event.target.value }))}
+              onBlur={(event) => commitSettings({ ...draft, azureResponsesApiVersion: event.target.value })}
+              type="text"
+              placeholder="preview"
+              className={fieldClassName}
+            />
+          </label>
+        </>
+      ) : null}
     </>
   )
 }
