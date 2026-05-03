@@ -64,19 +64,22 @@ export function buildResponsesRequestBody({
     tool.model = getResponsesImageModel(settings)
   }
 
-  if (params.size) {
+  if (params.size && (!isAzureFoundry || params.size !== 'auto')) {
     tool.size = params.size
   }
-  if (params.quality) {
+  if (params.quality && (!isAzureFoundry || params.quality !== 'auto')) {
     tool.quality = params.quality
   }
   if (params.output_format) {
     tool.output_format = params.output_format
   }
-  if (params.moderation) {
+  if (params.moderation && !isAzureFoundry) {
     tool.moderation = params.moderation
   }
-  if (params.output_format !== 'png' && params.output_compression != null) {
+  if (
+    params.output_compression != null &&
+    ((!isAzureFoundry && params.output_format !== 'png') || params.output_format === 'jpeg')
+  ) {
     tool.output_compression = params.output_compression
   }
   if (editMask && !isAzureFoundry) {
@@ -92,6 +95,10 @@ export function buildResponsesRequestBody({
     tools: [tool],
   }
 
+  if (isAzureFoundry) {
+    body.model = settings.azureTextDeployment?.trim() || settings.model
+  }
+
   if (plan.transport === 'stream' && !isAzureFoundry) {
     body.stream = true
   }
@@ -99,7 +106,7 @@ export function buildResponsesRequestBody({
     body.tool_choice = { type: 'image_generation' }
   }
   const reasoningEffort = getResponsesReasoningEffort(settings)
-  if (reasoningEffort !== 'none') {
+  if (!isAzureFoundry && reasoningEffort !== 'none') {
     body.reasoning = { effort: reasoningEffort }
   }
 

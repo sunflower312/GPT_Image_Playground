@@ -349,6 +349,10 @@ export async function prepareResponsesInputWithFallback(
   ctx: SharedRequestContext,
   preferredImageInputMode: ResponsesImageInputMode,
 ): Promise<PreparedResponsesInput> {
+  if (opts.settings.providerType === 'azure-foundry') {
+    return prepareResponsesInput(opts, ctx, 'auto')
+  }
+
   try {
     return await prepareResponsesInput(opts, ctx, preferredImageInputMode)
   } catch (error) {

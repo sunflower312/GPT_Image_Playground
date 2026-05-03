@@ -5,7 +5,6 @@ import {
   buildRequestUrl,
   getAzureImageDeployment,
   getAzureResponsesApiVersion,
-  getAzureTextDeployment,
   getProviderType,
   getResponsesImageInputMode,
 
@@ -139,8 +138,15 @@ export async function callResponsesApi(
 
           })
 
-          if (getProviderType(opts.settings) === 'azure-foundry') {
-            requestBody.model = getAzureTextDeployment(opts.settings)
+          const requestHeaders: Record<string, string> = {
+            ...ctx.requestHeaders,
+            'Content-Type': 'application/json',
+            ...(getProviderType(opts.settings) === 'azure-foundry'
+              ? {
+                  'x-ms-oai-image-generation-deployment': getAzureImageDeployment(opts.settings),
+                  api_version: getAzureResponsesApiVersion(opts.settings),
+                }
+              : {}),
           }
 
           const debugLogEntry = createDebugRequestLogEntry(
@@ -154,6 +160,7 @@ export async function callResponsesApi(
             actualRequestUrl,
 
             requestBody,
+            requestHeaders,
 
           )
 
@@ -161,19 +168,7 @@ export async function callResponsesApi(
 
             method: 'POST',
 
-            headers: {
-
-              ...ctx.requestHeaders,
-
-              'Content-Type': 'application/json',
-              ...(getProviderType(opts.settings) === 'azure-foundry'
-                ? {
-                    'x-ms-oai-image-generation-deployment': getAzureImageDeployment(opts.settings),
-                    api_version: getAzureResponsesApiVersion(opts.settings),
-                  }
-                : {}),
-
-            },
+            headers: requestHeaders,
 
             cache: 'no-store',
 
