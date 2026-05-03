@@ -1,7 +1,9 @@
 import type {
   ApiProtocol,
   AppSettings,
+  ProviderType,
   ResponsesImageInputMode,
+  ResponsesReasoningEffort,
   ResponsesPromptRevisionMode,
   ResponsesTransportMode,
 } from '../../types'
@@ -19,6 +21,30 @@ export const MIME_MAP = IMAGE_MIME_BY_EXTENSION
 
 export function getApiProtocol(settings: AppSettings): ApiProtocol {
   return settings.apiProtocol === 'responses' ? 'responses' : 'images'
+}
+
+export function getProviderType(settings: AppSettings): ProviderType {
+  return settings.providerType === 'azure-foundry' ? 'azure-foundry' : 'openai-compatible'
+}
+
+export function getResponsesReasoningEffort(settings: AppSettings): ResponsesReasoningEffort {
+  return settings.responsesReasoningEffort || 'none'
+}
+
+export function getAzureImageDeployment(settings: AppSettings): string {
+  return settings.azureImageDeployment?.trim() || settings.model
+}
+
+export function getAzureTextDeployment(settings: AppSettings): string {
+  return settings.azureTextDeployment?.trim() || settings.model
+}
+
+export function getAzureApiVersion(settings: AppSettings): string {
+  return settings.azureApiVersion?.trim() || '2025-04-01-preview'
+}
+
+export function getAzureResponsesApiVersion(settings: AppSettings): string {
+  return settings.azureResponsesApiVersion?.trim() || 'preview'
 }
 
 export function getResponsesImageModel(settings: AppSettings): string {

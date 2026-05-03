@@ -436,9 +436,15 @@ function isSameProviderConfig(left: ProviderConfig, right: ProviderConfig): bool
   return (
     getProviderNameKey(left.name) === getProviderNameKey(right.name) &&
     leftSettings.baseUrl === rightSettings.baseUrl &&
+    leftSettings.providerType === rightSettings.providerType &&
     leftSettings.apiKey === rightSettings.apiKey &&
     leftSettings.model === rightSettings.model &&
     leftSettings.responsesImageModel === rightSettings.responsesImageModel &&
+    leftSettings.responsesReasoningEffort === rightSettings.responsesReasoningEffort &&
+    leftSettings.azureImageDeployment === rightSettings.azureImageDeployment &&
+    leftSettings.azureTextDeployment === rightSettings.azureTextDeployment &&
+    leftSettings.azureApiVersion === rightSettings.azureApiVersion &&
+    leftSettings.azureResponsesApiVersion === rightSettings.azureResponsesApiVersion &&
     leftSettings.responsesTransport === rightSettings.responsesTransport &&
     leftSettings.responsesImageInputMode === rightSettings.responsesImageInputMode &&
     leftSettings.responsesPromptRevisionMode === rightSettings.responsesPromptRevisionMode &&

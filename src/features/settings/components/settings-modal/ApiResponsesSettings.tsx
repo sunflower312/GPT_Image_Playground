@@ -1,6 +1,7 @@
 import type {
   AppSettings,
   ResponsesImageInputMode,
+  ResponsesReasoningEffort,
   ResponsesPromptRevisionMode,
   ResponsesTransportMode,
 } from '../../../../types'
@@ -9,6 +10,7 @@ import {
   RESPONSES_IMAGE_INPUT_MODE_OPTIONS,
   RESPONSES_PROMPT_REVISION_MODE_OPTIONS,
   RESPONSES_TRANSPORT_OPTIONS,
+  RESPONSES_REASONING_EFFORT_OPTIONS,
 } from './options'
 import { fieldClassName } from './apiSettingsShared'
 
@@ -62,6 +64,21 @@ export default function ApiResponsesSettings({
             ：会先请求 <code className="rounded bg-gray-100 px-1 py-0.5 dark:bg-white/[0.06]">/v1/files</code>，只有中转站明确支持文件上传时再用。
           </div>
         </div>
+      </label>
+
+      <label className="block">
+        <span className="mb-1 block text-xs text-gray-500 dark:text-gray-400">Responses 思考等级</span>
+        <Select
+          value={draft.responsesReasoningEffort}
+          onChange={(value) =>
+            commitSettings({
+              ...draft,
+              responsesReasoningEffort: value as ResponsesReasoningEffort,
+            })
+          }
+          options={RESPONSES_REASONING_EFFORT_OPTIONS}
+          className={fieldClassName}
+        />
       </label>
 
       <label className="block">

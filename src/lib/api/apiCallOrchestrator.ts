@@ -1,5 +1,5 @@
 import { normalizeProxyTargetBaseUrl, readClientDevProxyConfig } from '../devProxy'
-import { getApiProtocol, MIME_MAP } from './config'
+import { getApiProtocol, getProviderType, MIME_MAP } from './config'
 import { attachLocalDebugToError } from './debug'
 import { callImagesApi } from './images'
 import { createApiError, normalizeEditMaskForProvider } from './imageTransforms'
@@ -56,9 +56,10 @@ function createApiCallRuntime(intent: CallImageApiIntent): ApiCallRuntime {
   const proxyConfig = readClientDevProxyConfig()
   const forceProxy = import.meta.env.DEV && baseOpts.settings.requestMode === 'local_proxy'
   const debugLog: ApiDebugRequestLogEntry[] = []
-  const requestHeaders: Record<string, string> = {
-    Authorization: `Bearer ${baseOpts.settings.apiKey}`,
-  }
+  const requestHeaders: Record<string, string> =
+    getProviderType(baseOpts.settings) === 'azure-foundry'
+      ? { 'api-key': baseOpts.settings.apiKey }
+      : { Authorization: `Bearer ${baseOpts.settings.apiKey}` }
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort('timeout'), baseOpts.settings.timeout * 1000)
   baseOpts.registerAbort?.(() => controller.abort('user'))

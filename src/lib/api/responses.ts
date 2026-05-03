@@ -3,7 +3,10 @@ import type { AppliedTransportMeta } from '../../types'
 import {
 
   buildRequestUrl,
-
+  getAzureImageDeployment,
+  getAzureResponsesApiVersion,
+  getAzureTextDeployment,
+  getProviderType,
   getResponsesImageInputMode,
 
 } from './config'
@@ -120,6 +123,9 @@ export async function callResponsesApi(
           let actualTransport: ActualTransportKind = 'json'
 
           const requestUrl = buildRequestUrl(opts.settings.baseUrl, 'responses', ctx)
+          const actualRequestUrl = getProviderType(opts.settings) === 'azure-foundry'
+            ? `${opts.settings.baseUrl.trim().replace(/\/+$/, '').replace(/\/openai\/v1\/?$/i, '')}/openai/v1/responses`
+            : requestUrl
 
           const requestBody = buildResponsesRequestBody({
 
@@ -133,6 +139,10 @@ export async function callResponsesApi(
 
           })
 
+          if (getProviderType(opts.settings) === 'azure-foundry') {
+            requestBody.model = getAzureTextDeployment(opts.settings)
+          }
+
           const debugLogEntry = createDebugRequestLogEntry(
 
             ctx,
@@ -141,13 +151,13 @@ export async function callResponsesApi(
 
             'POST',
 
-            requestUrl,
+            actualRequestUrl,
 
             requestBody,
 
           )
 
-          const response = await fetch(requestUrl, {
+          const response = await fetch(actualRequestUrl, {
 
             method: 'POST',
 
@@ -156,6 +166,12 @@ export async function callResponsesApi(
               ...ctx.requestHeaders,
 
               'Content-Type': 'application/json',
+              ...(getProviderType(opts.settings) === 'azure-foundry'
+                ? {
+                    'x-ms-oai-image-generation-deployment': getAzureImageDeployment(opts.settings),
+                    api_version: getAzureResponsesApiVersion(opts.settings),
+                  }
+                : {}),
 
             },
 
@@ -258,4 +274,3 @@ export async function callResponsesApi(
   return responseMeta ? { images, responseMeta } : { images }
 
 }
-

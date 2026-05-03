@@ -1,6 +1,17 @@
-import { buildRequestUrl } from './config'
+import { buildRequestUrl, getAzureApiVersion, getAzureImageDeployment } from './config'
 import { createApiError, dataUrlToBlob, isDataUrl, isHttpUrl } from './imageTransforms'
 import type { CallApiOptions, ImagesRequestPlan, SharedRequestContext } from './types'
+
+function normalizeAzureBase(baseUrl: string): { resourceOrigin: string; openaiV1Base: string } {
+  const trimmed = baseUrl.trim().replace(/\/+$/, '')
+  const resourceOrigin = trimmed.replace(/\/openai\/v1\/?$/i, '').replace(/\/+$/, '')
+  return { resourceOrigin, openaiV1Base: `${resourceOrigin}/openai/v1` }
+}
+
+function buildAzureUrl(baseUrl: string, path: string): string {
+  const normalized = normalizeAzureBase(baseUrl)
+  return `${normalized.openaiV1Base}/${path}`
+}
 
 interface BuildImagesRequestSpecOptions {
   opts: Pick<CallApiOptions, 'settings' | 'prompt' | 'params' | 'inputImageDataUrls' | 'editMaskDataUrl'>
@@ -21,7 +32,7 @@ function appendCommonEditFormFields(
   plan: ImagesRequestPlan,
 ) {
   const { settings, prompt, params } = opts
-  formData.append('model', settings.model)
+  formData.append('model', settings.providerType === 'azure-foundry' ? getAzureImageDeployment(settings) : settings.model)
   formData.append('prompt', prompt)
   formData.append('size', params.size)
   formData.append('quality', params.quality)
@@ -45,7 +56,7 @@ function buildImagesGenerateRequestSpec({
 }: BuildImagesRequestSpecOptions): ImagesRequestSpec {
   const { settings, prompt, params } = opts
   const body: Record<string, unknown> = {
-    model: settings.model,
+    model: settings.providerType === 'azure-foundry' ? getAzureImageDeployment(settings) : settings.model,
     prompt,
     size: params.size,
     quality: params.quality,
@@ -65,7 +76,10 @@ function buildImagesGenerateRequestSpec({
 
   return {
     stage: `images.generate.${plan.id}`,
-    requestUrl: buildRequestUrl(settings.baseUrl, 'images/generations', ctx),
+    requestUrl:
+      settings.providerType === 'azure-foundry'
+        ? buildAzureUrl(settings.baseUrl, 'images/generations')
+        : buildRequestUrl(settings.baseUrl, 'images/generations', ctx),
     debugBody: body,
     requestInit: {
       method: 'POST',
@@ -94,7 +108,7 @@ async function buildImagesEditJsonRequestSpec({
   })
 
   const body: Record<string, unknown> = {
-    model: settings.model,
+    model: settings.providerType === 'azure-foundry' ? getAzureImageDeployment(settings) : settings.model,
     prompt,
     images,
     size: params.size,
@@ -123,7 +137,13 @@ async function buildImagesEditJsonRequestSpec({
 
   return {
     stage: `images.edit.${plan.id}`,
-    requestUrl: buildRequestUrl(settings.baseUrl, 'images/edits', ctx),
+    requestUrl:
+      settings.providerType === 'azure-foundry'
+        ? (() => {
+            const { resourceOrigin } = normalizeAzureBase(settings.baseUrl)
+            return `${resourceOrigin}/openai/deployments/${encodeURIComponent(getAzureImageDeployment(settings))}/images/edits?api-version=${encodeURIComponent(getAzureApiVersion(settings))}`
+          })()
+        : buildRequestUrl(settings.baseUrl, 'images/edits', ctx),
     debugBody: {
       ...body,
       imageCount: inputImageDataUrls.length,
@@ -165,9 +185,15 @@ async function buildImagesEditMultipartRequestSpec({
 
   return {
     stage: `images.edit.${plan.id}`,
-    requestUrl: buildRequestUrl(settings.baseUrl, 'images/edits', ctx),
+    requestUrl:
+      settings.providerType === 'azure-foundry'
+        ? (() => {
+            const { resourceOrigin } = normalizeAzureBase(settings.baseUrl)
+            return `${resourceOrigin}/openai/deployments/${encodeURIComponent(getAzureImageDeployment(settings))}/images/edits?api-version=${encodeURIComponent(getAzureApiVersion(settings))}`
+          })()
+        : buildRequestUrl(settings.baseUrl, 'images/edits', ctx),
     debugBody: {
-      model: settings.model,
+      model: settings.providerType === 'azure-foundry' ? getAzureImageDeployment(settings) : settings.model,
       prompt,
       size: params.size,
       quality: params.quality,

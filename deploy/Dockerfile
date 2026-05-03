@@ -6,7 +6,9 @@ WORKDIR /app
 ENV VITE_DEFAULT_API_URL=__VITE_DEFAULT_API_URL_PLACEHOLDER__
 
 COPY package.json package-lock.json ./
-RUN npm ci
+ENV NODE_ENV=development
+ENV NPM_CONFIG_PRODUCTION=false
+RUN npm ci --include=dev
 
 COPY . .
 RUN npm run build
