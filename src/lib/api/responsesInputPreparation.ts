@@ -200,13 +200,14 @@ async function prepareResponsesInputImages(
   baseUrl: string,
   inputImageDataUrls: string[],
   imageInputMode: ResponsesImageInputMode,
+  providerType: CallApiOptions['settings']['providerType'],
   ctx: SharedRequestContext,
   uploadedFileIds: string[],
   options?: {
     preserveOriginalIndices?: Set<number>
   },
 ): Promise<ResponsesInputImage[]> {
-  const isAzureFoundry = ctx.settings.providerType === 'azure-foundry'
+  const isAzureFoundry = providerType === 'azure-foundry'
   if (!inputImageDataUrls.length) {
     return []
   }
@@ -312,6 +313,7 @@ export async function prepareResponsesInput(
       opts.settings.baseUrl,
       preparedEditAssets.inputImageDataUrls,
       imageInputMode,
+      opts.settings.providerType,
       ctx,
       uploadedFileIds,
       { preserveOriginalIndices: preparedEditAssets.preserveOriginalIndices },
